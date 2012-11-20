@@ -1,0 +1,5 @@
+*.o
+pg-cop-service
+*~
+*.so
+\#*\#
