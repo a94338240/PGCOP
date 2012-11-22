@@ -11,6 +11,10 @@ extern const char rodata_str_module_cannot_be_load[];
 extern const char rodata_str_module_nosym_module_info[];
 extern const char rodata_str_pthread_mem_failed[];
 extern const char rodata_str_cannot_create_thread[];
+extern const char rodata_str_accept_error[];
+extern const char rodata_str_module_nosym_module_hooks[];
+extern const char rodata_str_com_module_enabled[];
+extern const char rodata_str_no_com_module[];
 
 extern const char rodata_path_modules[];
 extern const char rodata_path_modules_ext[];

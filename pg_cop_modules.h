@@ -1,6 +1,7 @@
 #ifndef PG_COP_MODULES_H
 #define PG_COP_MODULES_H
 
+#include <pthread.h>
 #include "pg_cop_util.h"
 
 #define MAXLEN_MODULE_FILE_EXT (20)
@@ -38,23 +39,27 @@ typedef struct {
 
 typedef int (*pg_cop_rpc_func_callback_t)(void *);
 
+typedef struct {
+  int (*init)(int argc, char *argv[]);
+  int (*bind)();
+  int (*accept)();
+  int (*send)(int id, const void *buf, unsigned int len,
+              unsigned int flags);
+  int (*recv)(int id, void *buf, unsigned int len,
+              unsigned int flags);
+} pg_cop_module_com_hooks_t;
+
+typedef struct {
+  pg_cop_rpc_state_t* (*call_function_sync)(const char *func, ...);
+  pg_cop_rpc_state_t* (*call_function_async)(const char *func, 
+                                             pg_cop_rpc_func_callback_t callback, 
+                                             ...);
+} pg_cop_module_rpc_hooks_t;
+
 typedef union {
-  struct {
-    int (*init)(int argc, char *argv[]);
-    int (*bind)();
-    int (*accept)();
-    int (*send)(int id, const void *buf, unsigned int len,
-                unsigned int flags);
-    int (*recv)(int id, void *buf, unsigned int len,
-                unsigned int flags);
-  };
-  struct {
-    pg_cop_rpc_state_t* (*call_function_sync)(const char *func, ...);
-    pg_cop_rpc_state_t* (*call_function_async)(const char *func, 
-                                               pg_cop_rpc_func_callback_t callback, 
-                                               ...);
-  };
-} pg_cop_module_ops_t;
+  pg_cop_module_com_hooks_t *com;
+  pg_cop_module_rpc_hooks_t *rpc;
+} pg_cop_module_hooks_t;
 
 int pg_cop_hook_com_init(pg_cop_module_t *module, int argc, char *argv[]);
 int pg_cop_hook_com_bind(pg_cop_module_t *module);
@@ -68,10 +73,10 @@ int pg_cop_hook_com_recv(pg_cop_module_t *module, int id,
 
 typedef struct _pg_cop_module_t {
   void *dl_handle;
-  pthread_t *thread;
-  pthread_attr_t *thread_attr;
+  pthread_t thread;
+  pthread_attr_t thread_attr;
   pg_cop_module_info_t *info;
-  pg_cop_module_ops_t *hooks;
+  pg_cop_module_hooks_t hooks;
   pg_cop_list_t list_head;
 } pg_cop_module_t;
 
@@ -79,8 +84,7 @@ extern pg_cop_module_t *pg_cop_modules_list_for_com;
 
 #define PG_COP_HOOK_CHECK_FAILURE                   \
   (!module || !module->info ||                      \
-   module->info->type != PG_COP_MODULE_TYPE_COM ||  \
-   !module->hooks)          
+   module->info->type != PG_COP_MODULE_TYPE_COM)          
 
 void pg_cop_init_modules_table();
 void pg_cop_load_modules();

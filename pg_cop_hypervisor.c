@@ -1,13 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <assert.h>
-#include <getopt.h>
 #include "pg_cop_hypervisor.h"
 #include "pg_cop_rodata_strings.h"
 #include "pg_cop_service.h"
 #include "pg_cop_debug.h"
 #include "pg_cop_modules.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <assert.h>
+#include <getopt.h>
 
 static struct option long_options[] = {
   {"help",       no_argument,       0,  'h'},
@@ -34,8 +34,9 @@ int main(int argc, char *argv[])
 
   pg_cop_init_modules_table();
   pg_cop_load_modules();
-  pg_cop_service_start();
+
   DEBUG_INFO(rodata_str_service_started);
+  pg_cop_service_start();
 
   return 0;
 }

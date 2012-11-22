@@ -1,5 +1,5 @@
-#include <string.h>
 #include "pg_cop_util.h"
+#include <string.h>
 
 int pg_cop_get_file_extension(const char *filename, char *ext, int length)
 {
