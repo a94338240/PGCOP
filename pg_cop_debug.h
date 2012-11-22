@@ -1,5 +1,6 @@
 #ifndef PG_COP_DEBUG_H
 #define PG_COP_DEBUG_H
+#include <stdio.h>
 
 #define DEBUG_ERROR(a)                          \
   do {                                          \

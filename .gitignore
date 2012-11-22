@@ -1,5 +1,7 @@
 *.o
-pg-cop-service
+pg-cop-hypervisor
+*.out
+*.files
 *~
 *.so
 \#*\#

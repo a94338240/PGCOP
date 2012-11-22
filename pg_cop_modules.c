@@ -7,7 +7,6 @@
 #include "pg_cop_rodata_strings.h"
 #include "pg_cop_modules.h"
 #include "pg_cop_debug.h"
-#include "pg_cop_util.h"
 
 pg_cop_module_t *pg_cop_modules_list_for_com;
 
@@ -15,9 +14,8 @@ void pg_cop_init_modules_table()
 {
   pg_cop_modules_list_for_com = 
     (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t));
-  pg_cop_modules_list_for_com->type = PG_COP_MODULE_TYPE_NONE;
-  pg_cop_modules_list_for_com->name = NULL;
   pg_cop_modules_list_for_com->dl_handle = NULL;
+  pg_cop_modules_list_for_com->info = NULL;
   PG_COP_LIST_HEAD(pg_cop_modules_list_for_com);
 }
 
@@ -30,11 +28,12 @@ void pg_cop_load_modules()
   char module_path[MAXLEN_MODULE_PATH] = {};
   pg_cop_module_t *module;
   void *dl_handle;
+  pg_cop_module_info_t *module_info;
 
   module_dir = opendir(rodata_path_modules);
   if (!module_dir)
     DEBUG_CRITICAL(rodata_str_cannot_find_open_dir);
-  while (module_dir_entry = readdir(module_dir)) {
+  while ((module_dir_entry = readdir(module_dir))) {
     if (!module_dir_entry->d_name)
       continue;
     if (pg_cop_get_file_extension(module_dir_entry->d_name, 
@@ -56,8 +55,17 @@ void pg_cop_load_modules()
       continue;
     }
 
+    module_info = dlsym(dl_handle, "pg_cop_module_info");
+    if (!module_info) {
+      sprintf(debug_info, rodata_str_module_nosym_module_info,
+              module_dir_entry->d_name);
+      DEBUG_ERROR(debug_info);
+      continue;
+    }
+
     module = (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t));
-    module->name = strdup(module_dir_entry->d_name);
+    module->dl_handle = dl_handle;
+    module->info = module_info;
     PG_COP_LIST_ADD_TAIL(pg_cop_modules_list_for_com, module);
 
     sprintf(debug_info, rodata_str_module_loaded_format,
@@ -66,4 +74,43 @@ void pg_cop_load_modules()
   }
 
   closedir(module_dir);
+}
+
+int pg_cop_hook_com_init(pg_cop_module_t *module, int argc, char *argv[])
+{
+  if (PG_COP_HOOK_CHECK_FAILURE || !module->hooks->init)
+    return -1;
+  return module->hooks->init(argc, argv);
+}
+
+int pg_cop_hook_com_bind(pg_cop_module_t *module)
+{
+  if (PG_COP_HOOK_CHECK_FAILURE || !module->hooks->bind)
+    return -1;
+  return module->hooks->bind();
+}
+
+int pg_cop_hook_com_accept(pg_cop_module_t *module)
+{
+  if (PG_COP_HOOK_CHECK_FAILURE || !module->hooks->accept)
+    return -1;
+  return module->hooks->accept();
+}
+
+int pg_cop_hook_com_send(pg_cop_module_t *module, int id, 
+                         const void *buf, unsigned int len,
+                         unsigned int flags)
+{
+  if (PG_COP_HOOK_CHECK_FAILURE || !module->hooks->send)
+    return -1;
+  return module->hooks->send(id, buf, len, flags);
+}
+
+int pg_cop_hook_com_recv(pg_cop_module_t *module, int id, 
+                         void *buf, unsigned int len,
+                         unsigned int flags)
+{
+  if (PG_COP_HOOK_CHECK_FAILURE || !module->hooks->recv)
+    return -1;
+  return module->hooks->recv(id, buf, len, flags);
 }
