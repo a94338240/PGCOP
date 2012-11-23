@@ -10,14 +10,17 @@
 #include <dlfcn.h>
 
 pg_cop_module_t *pg_cop_modules_list_for_com;
+pg_cop_module_t *pg_cop_modules_list_for_trans;
 
 void pg_cop_init_modules_table()
 {
   pg_cop_modules_list_for_com = 
     (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t));
-  pg_cop_modules_list_for_com->dl_handle = NULL;
-  pg_cop_modules_list_for_com->info = NULL;
   PG_COP_LIST_HEAD(pg_cop_modules_list_for_com);
+
+  pg_cop_modules_list_for_trans = 
+    (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t));
+  PG_COP_LIST_HEAD(pg_cop_modules_list_for_trans);
 }
 
 void pg_cop_load_modules()
@@ -31,6 +34,7 @@ void pg_cop_load_modules()
   void *dl_handle;
   void *module_hooks;
   pg_cop_module_info_t *module_info;
+  pg_cop_module_t *list;
 
   module_dir = opendir(rodata_path_modules);
   if (!module_dir)
@@ -75,9 +79,24 @@ void pg_cop_load_modules()
 
     module = (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t));
     module->dl_handle = dl_handle;
-    module->hooks.com = module_hooks;
+    module->hooks = module_hooks;
     module->info = module_info;
-    PG_COP_LIST_ADD_TAIL(pg_cop_modules_list_for_com, module);
+
+    switch (module->info->type) {
+    case PG_COP_MODULE_TYPE_COM:
+      list = pg_cop_modules_list_for_com;
+      break;
+    case PG_COP_MODULE_TYPE_TRANSCEIVER:
+      list = pg_cop_modules_list_for_trans;
+      break;
+    default:
+      sprintf(debug_info, rodata_str_cannot_detect_type_of_module_format, 
+              module_dir_entry->d_name);
+      DEBUG_ERROR(debug_info);
+      continue;
+    }
+
+    PG_COP_LIST_ADD_TAIL(list, module);
 
     sprintf(debug_info, rodata_str_module_loaded_format,
             module_dir_entry->d_name);
@@ -85,43 +104,4 @@ void pg_cop_load_modules()
   }
 
   closedir(module_dir);
-}
-
-int pg_cop_hook_com_init(pg_cop_module_t *module, int argc, char *argv[])
-{
-  if (PG_COP_HOOK_CHECK_FAILURE || !module->hooks.com->init)
-    return -1;
-  return module->hooks.com->init(argc, argv);
-}
-
-int pg_cop_hook_com_bind(pg_cop_module_t *module)
-{
-  if (PG_COP_HOOK_CHECK_FAILURE || !module->hooks.com->bind)
-    return -1;
-  return module->hooks.com->bind();
-}
-
-int pg_cop_hook_com_accept(pg_cop_module_t *module)
-{
-  if (PG_COP_HOOK_CHECK_FAILURE || !module->hooks.com->accept)
-    return -1;
-  return module->hooks.com->accept();
-}
-
-int pg_cop_hook_com_send(pg_cop_module_t *module, int id, 
-                         const void *buf, unsigned int len,
-                         unsigned int flags)
-{
-  if (PG_COP_HOOK_CHECK_FAILURE || !module->hooks.com->send)
-    return -1;
-  return module->hooks.com->send(id, buf, len, flags);
-}
-
-int pg_cop_hook_com_recv(pg_cop_module_t *module, int id, 
-                         void *buf, unsigned int len,
-                         unsigned int flags)
-{
-  if (PG_COP_HOOK_CHECK_FAILURE || !module->hooks.com->recv)
-    return -1;
-  return module->hooks.com->recv(id, buf, len, flags);
 }

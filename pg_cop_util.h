@@ -19,7 +19,9 @@ void _pg_cop_list_add_tail(pg_cop_list_t *new, pg_cop_list_t *head);
 #define PG_COP_LIST_GET(list, type)              \
   ((void *)list - (void*)(&((type *)0)->list_head))
 
-#define PG_COP_LIST_FOREACH(pos, head) \
-	for (pos = (head)->next; pos != (head); pos = pos->next)
+#define PG_COP_LIST_FOREACH_BEGIN(pos, head) do {                 \
+	for (pos = (head)->next; pos != (head); pos = pos->next) {
+
+#define PG_COP_LIST_FOREACH_END }} while (0)
 
 #endif /* PG_COP_UTIL_H */

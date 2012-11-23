@@ -11,17 +11,9 @@
 
 typedef enum {
   PG_COP_MODULE_TYPE_NONE,
-  PG_COP_MODULE_TYPE_COM
+  PG_COP_MODULE_TYPE_COM,
+  PG_COP_MODULE_TYPE_TRANSCEIVER,
 } PG_COP_MODULE_TYPE_t;
-
-typedef enum {
-  PG_COP_RPC_TYPE_INT,
-  PG_COP_RPC_TYPE_FLOAT,
-  PG_COP_RPC_TYPE_DOUBLE,
-  PG_COP_RPC_TYPE_CHAR,
-  PG_COP_RPC_TYPE_STRING,
-  PG_COP_RPC_TYPE_BINARY,
-} PG_COP_RPC_TYPE_t;
 
 typedef struct _pg_cop_module_t pg_cop_module_t;
 
@@ -32,59 +24,29 @@ typedef struct {
   char *private_data;
 } pg_cop_module_info_t;
 
-typedef struct {
-  PG_COP_RPC_TYPE_t type;
-  void* return_val;
-} pg_cop_rpc_state_t;
-
-typedef int (*pg_cop_rpc_func_callback_t)(void *);
-
-typedef struct {
-  int (*init)(int argc, char *argv[]);
-  int (*bind)();
-  int (*accept)();
-  int (*send)(int id, const void *buf, unsigned int len,
-              unsigned int flags);
-  int (*recv)(int id, void *buf, unsigned int len,
-              unsigned int flags);
-} pg_cop_module_com_hooks_t;
-
-typedef struct {
-  pg_cop_rpc_state_t* (*call_function_sync)(const char *func, ...);
-  pg_cop_rpc_state_t* (*call_function_async)(const char *func, 
-                                             pg_cop_rpc_func_callback_t callback, 
-                                             ...);
-} pg_cop_module_rpc_hooks_t;
-
-typedef union {
-  pg_cop_module_com_hooks_t *com;
-  pg_cop_module_rpc_hooks_t *rpc;
-} pg_cop_module_hooks_t;
-
-int pg_cop_hook_com_init(pg_cop_module_t *module, int argc, char *argv[]);
-int pg_cop_hook_com_bind(pg_cop_module_t *module);
-int pg_cop_hook_com_accept(pg_cop_module_t *module);
-int pg_cop_hook_com_send(pg_cop_module_t *module, int id, 
-                         const void *buf, unsigned int len,
-                         unsigned int flags);
-int pg_cop_hook_com_recv(pg_cop_module_t *module, int id, 
-                         void *buf, unsigned int len,
-                         unsigned int flags);
-
 typedef struct _pg_cop_module_t {
   void *dl_handle;
   pthread_t thread;
   pthread_attr_t thread_attr;
   pg_cop_module_info_t *info;
-  pg_cop_module_hooks_t hooks;
+  void *hooks;
   pg_cop_list_t list_head;
 } pg_cop_module_t;
 
 extern pg_cop_module_t *pg_cop_modules_list_for_com;
+extern pg_cop_module_t *pg_cop_modules_list_for_trans;
 
-#define PG_COP_HOOK_CHECK_FAILURE                   \
-  (!module || !module->info ||                      \
-   module->info->type != PG_COP_MODULE_TYPE_COM)          
+#define PG_COP_EACH_MODULE_BEGIN(module_head) do {             \
+  pg_cop_list_t *_tmp_pos, *_tmp_head;                         \
+  pg_cop_module_t *_module;                                    \
+  _tmp_head = &module_head->list_head;                         \
+  PG_COP_LIST_FOREACH_BEGIN(_tmp_pos, _tmp_head);              \
+  _module = (pg_cop_module_t *)                                \
+    PG_COP_LIST_GET(_tmp_pos, pg_cop_module_t);
+
+#define PG_COP_EACH_MODULE_END \
+  PG_COP_LIST_FOREACH_END;     \
+  } while (0)
 
 void pg_cop_init_modules_table();
 void pg_cop_load_modules();

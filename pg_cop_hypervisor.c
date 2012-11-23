@@ -1,8 +1,8 @@
 #include "pg_cop_hypervisor.h"
 #include "pg_cop_rodata_strings.h"
-#include "pg_cop_service.h"
 #include "pg_cop_debug.h"
-#include "pg_cop_modules.h"
+#include "pg_cop_hooks.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -36,7 +36,9 @@ int main(int argc, char *argv[])
   pg_cop_load_modules();
 
   DEBUG_INFO(rodata_str_service_started);
-  pg_cop_service_start();
-
+  PG_COP_EACH_MODULE_BEGIN(pg_cop_modules_list_for_trans);
+  pg_cop_hook_trans_init(_module, argc, argv);
+  pg_cop_hook_trans_start(_module);
+  PG_COP_EACH_MODULE_END;
   return 0;
 }

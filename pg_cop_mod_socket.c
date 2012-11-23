@@ -1,4 +1,4 @@
-#include "pg_cop_modules.h"
+#include "pg_cop_hooks.h"
 #include "pg_cop_debug.h"
 
 #include <sys/types.h>
@@ -70,12 +70,12 @@ static int socket_accept()
 
 static int socket_send(int id, const void *buf, unsigned int len,
                 unsigned int flags)
-{
-  return 0;
+{  
+  return send(id, buf, len, 0);
 }
 
 static int socket_recv(int id, void *buf, unsigned int len,
                 unsigned int flags)
 {
-  return 0;
+  return recv(id, buf, len, 0);
 }
