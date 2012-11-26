@@ -2,6 +2,7 @@
 #include "pg_cop_rodata_strings.h"
 #include "pg_cop_debug.h"
 #include "pg_cop_hooks.h"
+#include "pg_cop_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +33,7 @@ int main(int argc, char *argv[])
     }
   }
 
+  pg_cop_read_config(NULL); /* FIXME Argument support */
   pg_cop_init_modules_table();
   pg_cop_load_modules();
 

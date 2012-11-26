@@ -18,7 +18,9 @@ extern const char rodata_str_no_com_module[];
 extern const char rodata_str_service_welcome_message[];
 extern const char rodata_str_cannot_detect_type_of_module_format[];
 extern const int rodata_size_str_service_welcome_message;
+extern const char rodata_str_lua_error[];
 
+extern const char rodata_path_lua_config_file[];
 extern const char rodata_path_modules[];
 extern const char rodata_path_modules_ext[];
 

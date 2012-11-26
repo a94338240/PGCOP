@@ -35,6 +35,7 @@ typedef struct _pg_cop_module_t {
 
 extern pg_cop_module_t *pg_cop_modules_list_for_com;
 extern pg_cop_module_t *pg_cop_modules_list_for_trans;
+extern const char *pg_cop_modules_path;
 
 #define PG_COP_EACH_MODULE_BEGIN(module_head) do {             \
   pg_cop_list_t *_tmp_pos, *_tmp_head;                         \

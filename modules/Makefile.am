@@ -7,3 +7,6 @@ libmod_socket_la_CFLAGS = -I ../libPGCOP
 libmod_transceiver_la_SOURCES = pg_cop_mod_transceiver.c
 libmod_transceiver_la_LIBADD = ../libPGCOP/libPGCOP.la
 libmod_transceiver_la_CFLAGS = -I ../libPGCOP
+
+modulesdir = $(datadir)/modules
+modules_DATA = .libs/libmod_socket.so .libs/libmod_transceiver.so

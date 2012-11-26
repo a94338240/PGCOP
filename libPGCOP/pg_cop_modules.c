@@ -11,6 +11,7 @@
 
 pg_cop_module_t *pg_cop_modules_list_for_com;
 pg_cop_module_t *pg_cop_modules_list_for_trans;
+const char *pg_cop_modules_path = rodata_path_modules;
 
 void pg_cop_init_modules_table()
 {
@@ -36,7 +37,7 @@ void pg_cop_load_modules()
   pg_cop_module_info_t *module_info;
   pg_cop_module_t *list;
 
-  module_dir = opendir(rodata_path_modules);
+  module_dir = opendir(pg_cop_modules_path);
   if (!module_dir)
     DEBUG_CRITICAL(rodata_str_cannot_find_open_dir);
   while ((module_dir_entry = readdir(module_dir))) {
@@ -49,7 +50,7 @@ void pg_cop_load_modules()
         strncmp(file_ext, rodata_path_modules_ext, 2))
       continue;
 
-    strncpy(module_path, rodata_path_modules, sizeof(module_path));
+    strncpy(module_path, pg_cop_modules_path, sizeof(module_path));
     strncat(module_path, "/", sizeof(module_path));
     strncat(module_path, module_dir_entry->d_name, sizeof(module_path));
     dl_handle = dlopen(module_path, RTLD_LAZY);
