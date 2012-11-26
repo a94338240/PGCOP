@@ -12,6 +12,7 @@
 
 static struct option long_options[] = {
   {"help",       no_argument,       0,  'h'},
+  {"conf",       required_argument, 0,  'c'},
   {0,            0,                 0,   0 }
 };
 
@@ -19,6 +20,7 @@ int main(int argc, char *argv[])
 {
   int opt = 0;
   int option_index = 0;
+  const char *conf_file = rodata_path_lua_config_file;
 
   while ((opt = getopt_long(argc, argv, "h",
                             long_options, &option_index)) != -1) {
@@ -27,13 +29,16 @@ int main(int argc, char *argv[])
       fprintf(stderr, "%s", rodata_str_usage);
       exit(0);
       break;
+    case 'c':
+      conf_file = optarg;
+      break;
     default:
       fprintf(stderr, "%s", rodata_str_usage);
       exit(EXIT_FAILURE);
     }
   }
 
-  pg_cop_read_config(NULL); /* FIXME Argument support */
+  pg_cop_read_config(conf_file);
   pg_cop_init_modules_table();
   pg_cop_load_modules();
 

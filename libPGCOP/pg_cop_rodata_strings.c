@@ -1,6 +1,6 @@
 #include "pg_cop_rodata_strings.h"
 
-const char rodata_str_usage[] = "Usage:\n\t--srvtype [socket | sharedmem]\tService type. \n\t--port\tListen port. (default: 12728)\n\n";
+const char rodata_str_usage[] = "Usage:\n\t--help\t\t\t\tThis help.\n\t--conf <config file>\t\tLoad config file.\n\n";
 const char rodata_str_service_type_invalid[] = "Service type invalid.";
 const char rodata_str_port_not_in_range[] = "Port not in range.";
 const char rodata_str_service_started[] = "Pocograph COP Hypervisor started!";
