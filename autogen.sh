@@ -1,7 +1,7 @@
 #!/bin/sh
 
-libtoolize
-aclocal
-autoconf
-automake --add-missing
+libtoolize && \
+aclocal && \
+autoconf && \
+automake --add-missing && \
 ./configure $@
