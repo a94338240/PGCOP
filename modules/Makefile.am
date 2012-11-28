@@ -13,8 +13,3 @@ mod_transceiver_la_CFLAGS = -I ../libPGCOP
 install-data-hook:
 	mkdir -p $(datadir)/pgcop/modules
 	cp -L .libs/*.so $(datadir)/pgcop/modules
-	if [ ! -f /etc/pgcop_conf.lua ]; then \
-		echo "pgcop = {}" > /etc/pgcop_conf.lua ; \
-		echo "pgcop.modules_path = \"$(datadir)/pgcop/modules\"" >> /etc/pgcop_conf.lua ; \
-	fi
-

@@ -4,15 +4,16 @@
 #include <pthread.h>
 #include "pg_cop_util.h"
 
-#define MAXLEN_MODULE_FILE_EXT (20)
-#define MAXLEN_LOAD_MODULE_DEBUG_INFO (200)
-#define MAXLEN_MODULE_PATH (200)
+#define MAXLEN_MODULE_FILE_EXT (32)
+#define MAXLEN_LOAD_MODULE_DEBUG_INFO (255)
+#define MAXLEN_MODULE_PATH (255)
 #define DIRE_TYPE_REGULAR_FILE (8)
 
 typedef enum {
   PG_COP_MODULE_TYPE_NONE,
   PG_COP_MODULE_TYPE_COM,
   PG_COP_MODULE_TYPE_TRANSCEIVER,
+  PG_COP_MODULE_TYPE_PROTO
 } PG_COP_MODULE_TYPE_t;
 
 typedef struct _pg_cop_module_t pg_cop_module_t;
@@ -35,6 +36,7 @@ typedef struct _pg_cop_module_t {
 
 extern pg_cop_module_t *pg_cop_modules_list_for_com;
 extern pg_cop_module_t *pg_cop_modules_list_for_trans;
+extern pg_cop_module_t *pg_cop_modules_list_for_proto;
 extern const char *pg_cop_modules_path;
 
 #define PG_COP_EACH_MODULE_BEGIN(module_head) do {             \

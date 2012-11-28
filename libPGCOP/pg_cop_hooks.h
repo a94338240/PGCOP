@@ -35,6 +35,11 @@ typedef struct {
 
 typedef struct {
   int (*init)(int argc, char *argv[]);
+  int (*process)(void *data, int size);
+} pg_cop_module_proto_hooks_t;
+
+typedef struct {
+  int (*init)(int argc, char *argv[]);
   int (*start)();
 } pg_cop_module_trans_hooks_t;
 
@@ -47,6 +52,9 @@ typedef struct {
 #define PG_COP_TRANS_HOOKS(hooks) \
   ((pg_cop_module_trans_hooks_t *)(hooks))
 
+#define PG_COP_PROTO_HOOKS(hooks) \
+  ((pg_cop_module_proto_hooks_t *)(hooks))
+
 #define PG_COP_HOOK_CHECK_FAILURE_COM               \
   (!module || !module->info ||                      \
    module->info->type != PG_COP_MODULE_TYPE_COM)    
@@ -54,6 +62,10 @@ typedef struct {
 #define PG_COP_HOOK_CHECK_FAILURE_TRANS             \
   (!module || !module->info ||                      \
    module->info->type != PG_COP_MODULE_TYPE_TRANSCEIVER)    
+
+#define PG_COP_HOOK_CHECK_FAILURE_PROTO             \
+  (!module || !module->info ||                      \
+   module->info->type != PG_COP_MODULE_TYPE_PROTO)    
 
 int pg_cop_hook_com_init(pg_cop_module_t *module, int argc, char *argv[]);
 int pg_cop_hook_com_bind(pg_cop_module_t *module);
@@ -67,5 +79,9 @@ int pg_cop_hook_com_recv(pg_cop_module_t *module, int id,
 
 int pg_cop_hook_trans_init(pg_cop_module_t *module, int argc, char *argv[]);
 int pg_cop_hook_trans_start(pg_cop_module_t *module);
+
+int pg_cop_hook_proto_init(pg_cop_module_t *module, int argc, char *argv[]);
+int pg_cop_hook_proto_proto_type(pg_cop_module_t *module);
+int pg_cop_hook_proto_process(pg_cop_module_t *module, void *data, int size);
 
 #endif /* PG_COP_HOOKS_H */

@@ -3,5 +3,4 @@
 libtoolize && \
 aclocal && \
 autoconf && \
-automake --add-missing && \
-./configure $@
+automake --add-missing

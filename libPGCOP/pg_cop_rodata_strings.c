@@ -14,10 +14,12 @@ const char rodata_str_accept_error[] = "Cannot accept a connection.";
 const char rodata_str_module_nosym_module_hooks[] = "Cannot find symbol pg_cop_module_hooks in %s, the module is skipped.";
 const char rodata_str_com_module_enabled[] = "%d communication modules loaded.";
 const char rodata_str_no_com_module[] = "No communication modules, hypervisor terminated.";
-const char rodata_str_service_welcome_message[] = "PGCOP-HYPERVISOR-r1 [http://pocograph.com]\r\n\r\n";
+const char rodata_str_service_welcome_message[] = "PGCOP-HYPERVISOR-r1 [http://pocograph.com]\r\n";
 const int rodata_size_str_service_welcome_message = sizeof(rodata_str_service_welcome_message);
 const char rodata_str_cannot_detect_type_of_module_format[] = "Cannot detect the module type from %s";
 const char rodata_str_lua_error[] = "%s";
+const char rodata_str_unknown_protocol[] = "Protocol module loaded with no protocol specified.";
+const char rodata_str_module_serv_to_you_format[] = "MODULE: %s serv to you.\r\n\r\n";
 
 const char rodata_path_lua_config_file[] = "/etc/pgcop_conf.lua";
 const char rodata_path_modules[] = "/usr/share/pgcop/modules";

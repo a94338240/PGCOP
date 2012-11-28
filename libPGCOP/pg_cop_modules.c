@@ -1,6 +1,7 @@
 #include "pg_cop_modules.h"
 #include "pg_cop_rodata_strings.h"
 #include "pg_cop_debug.h"
+#include "pg_cop_hooks.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +12,7 @@
 
 pg_cop_module_t *pg_cop_modules_list_for_com;
 pg_cop_module_t *pg_cop_modules_list_for_trans;
+pg_cop_module_t *pg_cop_modules_list_for_proto;
 const char *pg_cop_modules_path = rodata_path_modules;
 
 void pg_cop_init_modules_table()
@@ -50,9 +52,9 @@ void pg_cop_load_modules()
         strncmp(file_ext, rodata_path_modules_ext, 2))
       continue;
 
-    strncpy(module_path, pg_cop_modules_path, sizeof(module_path));
-    strncat(module_path, "/", sizeof(module_path));
-    strncat(module_path, module_dir_entry->d_name, sizeof(module_path));
+    strncpy(module_path, pg_cop_modules_path, sizeof(module_path) - 1);
+    strncat(module_path, "/", sizeof(module_path) - 1);
+    strncat(module_path, module_dir_entry->d_name, sizeof(module_path) - 1);
     dl_handle = dlopen(module_path, RTLD_LAZY);
 
     if (!dl_handle) {
@@ -89,6 +91,9 @@ void pg_cop_load_modules()
       break;
     case PG_COP_MODULE_TYPE_TRANSCEIVER:
       list = pg_cop_modules_list_for_trans;
+      break;
+    case PG_COP_MODULE_TYPE_PROTO:
+      list = pg_cop_modules_list_for_proto;
       break;
     default:
       sprintf(debug_info, rodata_str_cannot_detect_type_of_module_format, 

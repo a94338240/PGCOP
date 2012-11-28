@@ -51,7 +51,7 @@ static int socket_bind()
            sizeof(serv_addr)) < 0)
     return -1;
 
-  listen(sockfd,5);
+  listen(sockfd, 5);
   MOD_DEBUG_INFO("Listen on port 12728");
   
   return 0;

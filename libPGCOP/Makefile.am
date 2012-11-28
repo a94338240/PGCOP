@@ -13,3 +13,9 @@ libPGCOP_la_SOURCES = pg_cop_util.c \
 
 libPGCOP_la_CFLAGS = $(PGCOP_DEPS_CFLAGS)
 libPGCOP_la_LDFLAGS = $(PGCOP_DEPS_LIBS) -lpthread -ldl
+
+install-data-hook:
+	if [ ! -f /etc/pgcop_conf.lua ]; then \
+		echo "pgcop = {}" > /etc/pgcop_conf.lua ; \
+		echo "pgcop.modules_path = \"$(datadir)/pgcop/modules\"" >> /etc/pgcop_conf.lua ; \
+	fi

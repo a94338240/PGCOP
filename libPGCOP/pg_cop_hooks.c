@@ -59,3 +59,19 @@ int pg_cop_hook_trans_start(pg_cop_module_t *module)
     return -1;
   return PG_COP_TRANS_HOOKS(module->hooks)->start();
 }
+
+int pg_cop_hook_proto_init(pg_cop_module_t *module, int argc, char *argv[])
+{
+  if (PG_COP_HOOK_CHECK_FAILURE_PROTO || 
+      !PG_COP_PROTO_HOOKS(module->hooks)->init)
+    return -1;
+  return PG_COP_PROTO_HOOKS(module->hooks)->init(argc, argv);
+}
+
+int pg_cop_hook_proto_process(pg_cop_module_t *module, void *data, int size)
+{
+  if (PG_COP_HOOK_CHECK_FAILURE_PROTO || 
+      !PG_COP_PROTO_HOOKS(module->hooks)->process)
+    return -1;
+  return PG_COP_PROTO_HOOKS(module->hooks)->process(data, size);
+}

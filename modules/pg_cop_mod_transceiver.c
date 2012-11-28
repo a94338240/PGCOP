@@ -4,6 +4,12 @@
 
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
+
+struct accepted_cli {
+  int fd;
+  pg_cop_module_t *module;
+};
 
 static int transceiver_start();
 
@@ -17,9 +23,32 @@ pg_cop_module_trans_hooks_t pg_cop_module_hooks = {
   .start = transceiver_start
 };
 
+static void *transceiver_process(void *acc_cli)
+{
+  char welcome_info[255];
+  struct accepted_cli cli;
+
+  memcpy(&cli, (struct accepted_cli *)acc_cli, sizeof(cli));
+
+  sprintf(welcome_info, rodata_str_module_serv_to_you_format, 
+          cli.module->info->name);
+
+  pg_cop_hook_com_send(cli.module, cli.fd, 
+                       rodata_str_service_welcome_message, 
+                       rodata_size_str_service_welcome_message, 0);
+  pg_cop_hook_com_send(cli.module, cli.fd, welcome_info, 
+                       sizeof(welcome_info), 0);
+  return NULL;
+}
+
 static void *transceiver_routine(void *module)
 {
   int fd;
+  void *res;
+  int s;
+  pthread_t child_thread;
+  pthread_attr_t child_thread_attr;
+  struct accepted_cli accepted_cli;
 
   if (pg_cop_hook_com_init(module, 0, NULL) != 0) { /* FIXME args */
     return NULL;
@@ -31,10 +60,22 @@ static void *transceiver_routine(void *module)
     fd = pg_cop_hook_com_accept(module);
     if (fd < 0)
       MOD_DEBUG_ERROR(rodata_str_accept_error);
-    /* TODO: Receive and send. */
-    
-    pg_cop_hook_com_send(module, fd, rodata_str_service_welcome_message, 
-                         rodata_size_str_service_welcome_message, 0);
+
+    /* FIXME Stack size. */
+    s = pthread_attr_init(&child_thread_attr);
+    if (s != 0) {
+      MOD_DEBUG_ERROR(rodata_str_cannot_create_thread);
+      continue;
+    }
+
+    accepted_cli.fd = fd;
+    accepted_cli.module = module;
+  
+    if (pthread_create(&child_thread, &child_thread_attr,
+                       transceiver_process, &accepted_cli)) {
+      MOD_DEBUG_ERROR(rodata_str_cannot_create_thread);
+      continue;
+    }
   }
   return NULL;
 }
@@ -54,8 +95,11 @@ static int transceiver_start()
     continue;
   }
   
-  pthread_create(&_module->thread, &_module->thread_attr,
-                 transceiver_routine, _module);
+  if (pthread_create(&_module->thread, &_module->thread_attr,
+                     transceiver_routine, _module)) {
+    MOD_DEBUG_ERROR(rodata_str_cannot_create_thread);
+    continue;
+  }
   
   count++;
   PG_COP_EACH_MODULE_END;
