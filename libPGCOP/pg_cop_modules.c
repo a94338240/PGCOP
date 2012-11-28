@@ -19,15 +19,15 @@ const char *pg_cop_modules_path = rodata_path_modules;
 void pg_cop_init_modules_table()
 {
   pg_cop_modules_list_for_com = 
-    (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t));
+    (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t)); // INFO No free needed
   PG_COP_LIST_HEAD(pg_cop_modules_list_for_com);
 
   pg_cop_modules_list_for_trans = 
-    (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t));
+    (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t)); // INFO No free needed
   PG_COP_LIST_HEAD(pg_cop_modules_list_for_trans);
 
   pg_cop_modules_list_for_proto = 
-    (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t));
+    (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t)); // INFO No free needed
   PG_COP_LIST_HEAD(pg_cop_modules_list_for_proto);
 }
 
@@ -85,7 +85,7 @@ void pg_cop_load_modules(int argc, char *argv[])
       continue;
     }
 
-    module = (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t));
+    module = (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t)); // FIXME Not freed
     module->dl_handle = dl_handle;
     module->hooks = module_hooks;
     module->info = module_info;

@@ -21,6 +21,7 @@ extern const int rodata_size_str_service_welcome_message;
 extern const char rodata_str_lua_error[];
 extern const char rodata_str_unknown_protocol[];
 extern const char rodata_str_module_serv_to_you_format[];
+extern const char rodata_str_client_disconnected[];
 
 extern const char rodata_path_lua_config_file[];
 extern const char rodata_path_modules[];
