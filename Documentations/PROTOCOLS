@@ -1,0 +1,59 @@
+COP Protocol Family
+
+= COP Protocol Header
+
+    Bits           +--7--+--6--+--5--+--4--+--3--+--2--+--1--+--0--+
+    Byte 0 ~ 3     |                    Magic Num                  |
+    Byte 4         |                    Flags                      |
+    Byte 5         |                    Index                      |
+    Byte 6 ~ 8     |                    Index(ext)                 |
+    Byte 9 ~ 12    |                    Length                     |
+    Byte 13 ~ n    |                    Datas                      |
+    Byte n + 1     |                    Checksum                   |
+         ~ n + 4   |                                               |
+                   +-----------------------------------------------+
+    
+    Direction : IN / OUT
+    Magic Num / Proto Type
+        Value        : (Magic Number & Proto Type)
+        Byte Order   : Littel-Endian
+        Magic Number : 0xC7280702UI
+
+    Flags
+
+    Bit            +--7--+--6--+--5--+--4--+--3--+--2--+--1--+--0--+
+    Byte 4         | MLT | FIN | LOS | EXT |        Reserved       |
+                   +-----------------------------------------------+
+
+        MLT
+            Mutli-part data.
+        FIN
+            Last packet, if bit MLT was set.
+        LOS
+            Data lost, from index n.
+        EXT
+            Extent index if data too big.
+    Index
+        Value : Packet index if bit MLT or LOS was set.
+    Index(ext)
+        Value : Extended index when bit EXT was set.
+    Length
+        Value : Length of Datas and Checksum.
+    Datas
+        Datas size = Length - sizeof(Checksum).
+    Checksum
+        CRC32
+
+
+= Test Protocol
+
+    Bits           +--7--+--6--+--5--+--4--+--3--+--2--+--1--+--0--+
+    Byte 0         |               Sub Protocol Code               |
+    Byte 1 ~ n     |                 Hello Message                 |
+    Bype n + 1     |                      0x0                      |
+                   +-----------------------------------------------+
+    
+    Sub Protocol Code
+        Value : 0x0
+    Hello Message
+        Value : A string
