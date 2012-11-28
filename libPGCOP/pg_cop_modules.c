@@ -13,6 +13,7 @@
 pg_cop_module_t *pg_cop_modules_list_for_com;
 pg_cop_module_t *pg_cop_modules_list_for_trans;
 pg_cop_module_t *pg_cop_modules_list_for_proto;
+
 const char *pg_cop_modules_path = rodata_path_modules;
 
 void pg_cop_init_modules_table()
@@ -24,9 +25,13 @@ void pg_cop_init_modules_table()
   pg_cop_modules_list_for_trans = 
     (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t));
   PG_COP_LIST_HEAD(pg_cop_modules_list_for_trans);
+
+  pg_cop_modules_list_for_proto = 
+    (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t));
+  PG_COP_LIST_HEAD(pg_cop_modules_list_for_proto);
 }
 
-void pg_cop_load_modules()
+void pg_cop_load_modules(int argc, char *argv[])
 {
   DIR *module_dir;
   struct dirent *module_dir_entry;
@@ -88,12 +93,15 @@ void pg_cop_load_modules()
     switch (module->info->type) {
     case PG_COP_MODULE_TYPE_COM:
       list = pg_cop_modules_list_for_com;
+      pg_cop_hook_com_init(module, argc, argv);
       break;
     case PG_COP_MODULE_TYPE_TRANSCEIVER:
       list = pg_cop_modules_list_for_trans;
+      pg_cop_hook_trans_init(module, argc, argv);
       break;
     case PG_COP_MODULE_TYPE_PROTO:
       list = pg_cop_modules_list_for_proto;
+      pg_cop_hook_proto_init(module, argc, argv);
       break;
     default:
       sprintf(debug_info, rodata_str_cannot_detect_type_of_module_format, 

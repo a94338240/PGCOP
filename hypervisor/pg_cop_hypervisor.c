@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
   pg_cop_read_config(conf_file);
   pg_cop_init_modules_table();
-  pg_cop_load_modules();
+  pg_cop_load_modules(argc, argv);
 
   DEBUG_INFO(rodata_str_service_started);
 

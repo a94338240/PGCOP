@@ -13,13 +13,13 @@ struct accepted_cli {
 
 static int transceiver_start();
 
-pg_cop_module_info_t pg_cop_module_info = {
+const pg_cop_module_info_t pg_cop_module_info = {
   .magic = 0xF7280102,/* FIXME */
   .type = PG_COP_MODULE_TYPE_TRANSCEIVER,
   .name = "mod_transceiver"
 };
 
-pg_cop_module_trans_hooks_t pg_cop_module_hooks = {
+const pg_cop_module_trans_hooks_t pg_cop_module_hooks = {
   .start = transceiver_start
 };
 
@@ -27,6 +27,8 @@ static void *transceiver_process(void *acc_cli)
 {
   char welcome_info[255];
   struct accepted_cli cli;
+  pg_cop_data_in_t data_in;
+  pg_cop_data_out_t data_out;
 
   memcpy(&cli, (struct accepted_cli *)acc_cli, sizeof(cli));
 
@@ -38,6 +40,13 @@ static void *transceiver_process(void *acc_cli)
                        rodata_size_str_service_welcome_message, 0);
   pg_cop_hook_com_send(cli.module, cli.fd, welcome_info, 
                        sizeof(welcome_info), 0);
+
+  PG_COP_EACH_MODULE_BEGIN(pg_cop_modules_list_for_proto);
+  pg_cop_hook_proto_process(_module, data_in, &data_out, 0);
+  /* TODO Service Process */
+  pg_cop_hook_proto_sweep(_module, data_out);
+  PG_COP_EACH_MODULE_END;
+
   return NULL;
 }
 
@@ -50,9 +59,6 @@ static void *transceiver_routine(void *module)
   pthread_attr_t child_thread_attr;
   struct accepted_cli accepted_cli;
 
-  if (pg_cop_hook_com_init(module, 0, NULL) != 0) { /* FIXME args */
-    return NULL;
-  }
   if (pg_cop_hook_com_bind(module) != 0)
     return NULL;
 

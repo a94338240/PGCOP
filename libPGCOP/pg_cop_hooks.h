@@ -13,6 +13,16 @@ typedef struct {
               unsigned int flags);
 } pg_cop_module_com_hooks_t;
 
+typedef struct {
+  void *data;
+  int size;
+} pg_cop_data_in_t;
+
+typedef struct {
+  void *data;
+  int size;
+} pg_cop_data_out_t;
+
 typedef enum {
   PG_COP_RPC_TYPE_INT,
   PG_COP_RPC_TYPE_FLOAT,
@@ -35,7 +45,9 @@ typedef struct {
 
 typedef struct {
   int (*init)(int argc, char *argv[]);
-  int (*process)(void *data, int size);
+  int (*process)(pg_cop_data_in_t in, pg_cop_data_out_t *out,
+                 int sub_lvl);
+  int (*sweep)(pg_cop_data_out_t out);
 } pg_cop_module_proto_hooks_t;
 
 typedef struct {
@@ -81,7 +93,8 @@ int pg_cop_hook_trans_init(pg_cop_module_t *module, int argc, char *argv[]);
 int pg_cop_hook_trans_start(pg_cop_module_t *module);
 
 int pg_cop_hook_proto_init(pg_cop_module_t *module, int argc, char *argv[]);
-int pg_cop_hook_proto_proto_type(pg_cop_module_t *module);
-int pg_cop_hook_proto_process(pg_cop_module_t *module, void *data, int size);
+int pg_cop_hook_proto_process(pg_cop_module_t *module, pg_cop_data_in_t in,
+                              pg_cop_data_out_t *out, int sub_lvl);
+int pg_cop_hook_proto_sweep(pg_cop_module_t *module, pg_cop_data_out_t out);
 
 #endif /* PG_COP_HOOKS_H */

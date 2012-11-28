@@ -13,7 +13,7 @@ typedef enum {
   PG_COP_MODULE_TYPE_NONE,
   PG_COP_MODULE_TYPE_COM,
   PG_COP_MODULE_TYPE_TRANSCEIVER,
-  PG_COP_MODULE_TYPE_PROTO
+  PG_COP_MODULE_TYPE_PROTO,
 } PG_COP_MODULE_TYPE_t;
 
 typedef struct _pg_cop_module_t pg_cop_module_t;
@@ -52,6 +52,6 @@ extern const char *pg_cop_modules_path;
   } while (0)
 
 void pg_cop_init_modules_table();
-void pg_cop_load_modules();
+void pg_cop_load_modules(int argc, char *argv[]);
   
 #endif /* PG_COP_MODULES_H */

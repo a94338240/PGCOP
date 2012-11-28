@@ -14,7 +14,7 @@ static int socket_send(int id, const void *buf, unsigned int len,
 static int socket_recv(int id, void *buf, unsigned int len,
                        unsigned int flags);
 
-pg_cop_module_com_hooks_t pg_cop_module_hooks = {
+const pg_cop_module_com_hooks_t pg_cop_module_hooks = {
   .init = socket_init,
   .bind = socket_bind,
   .accept = socket_accept,
@@ -22,7 +22,7 @@ pg_cop_module_com_hooks_t pg_cop_module_hooks = {
   .recv = socket_recv
 };
 
-pg_cop_module_info_t pg_cop_module_info = {
+const pg_cop_module_info_t pg_cop_module_info = {
   .magic = 0xF7280001, /* FIXME call pg_cop_get_magic() */
   .type = PG_COP_MODULE_TYPE_COM,
   .name = "mod_socket"
