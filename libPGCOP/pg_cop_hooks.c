@@ -44,6 +44,14 @@ int pg_cop_hook_com_recv(pg_cop_module_t *module, int id,
   return PG_COP_COM_HOOKS(module->hooks)->recv(id, buf, len, flags);
 }
 
+int pg_cop_hook_com_connect(pg_cop_module_t *module)
+{
+  if (PG_COP_HOOK_CHECK_FAILURE_COM || 
+      !PG_COP_COM_HOOKS(module->hooks)->connect)
+    return -1;
+  return PG_COP_COM_HOOKS(module->hooks)->connect();
+}
+
 int pg_cop_hook_trans_init(pg_cop_module_t *module, int argc, char *argv[])
 {
   if (PG_COP_HOOK_CHECK_FAILURE_TRANS || 

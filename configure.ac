@@ -44,9 +44,9 @@ AC_ARG_ENABLE(debug,
 AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 AC_CONFIG_FILES([Makefile
-                 hypervisor/Makefile
                  libPGCOP/Makefile
-                 modules/Makefile])
+                 modules/Makefile
+                 hypervisor/Makefile])
 
 AC_OUTPUT
 

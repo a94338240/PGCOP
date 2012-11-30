@@ -11,17 +11,14 @@ typedef struct {
               unsigned int flags);
   int (*recv)(int id, void *buf, unsigned int len,
               unsigned int flags);
+  int (*connect)();
 } pg_cop_module_com_hooks_t;
 
 typedef struct {
   void *data;
   int size;
-} pg_cop_data_in_t;
-
-typedef struct {
-  void *data;
-  int size;
-} pg_cop_data_out_t;
+  void *private_data;
+} pg_cop_data_in_t, pg_cop_data_out_t;
 
 typedef enum {
   PG_COP_RPC_TYPE_INT,
@@ -88,6 +85,7 @@ int pg_cop_hook_com_send(pg_cop_module_t *module, int id,
 int pg_cop_hook_com_recv(pg_cop_module_t *module, int id, 
                          void *buf, unsigned int len,
                          unsigned int flags);
+int pg_cop_hook_com_connect(pg_cop_module_t *module);
 
 int pg_cop_hook_trans_init(pg_cop_module_t *module, int argc, char *argv[]);
 int pg_cop_hook_trans_start(pg_cop_module_t *module);

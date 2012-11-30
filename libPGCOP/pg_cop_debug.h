@@ -18,6 +18,11 @@
     fprintf(stdout, "INFO: %s\n", a);                     \
   } while (0)
 
+#define DEBUG_DEBUG(a)                                     \
+  do {                                                    \
+    fprintf(stdout, "DEBUG: %s\n", a);                     \
+  } while (0)
+
 #define MOD_DEBUG_ERROR(a)                                           \
   do {                                                              \
     fprintf(stdout, "ERROR: [%s] %s\n", pg_cop_module_info.name, a); \
@@ -31,6 +36,11 @@
 #define MOD_DEBUG_INFO(a)                                           \
   do {                                                              \
     fprintf(stdout, "INFO: [%s] %s\n", pg_cop_module_info.name, a); \
+  } while (0)
+
+#define MOD_DEBUG_DEBUG(a)                                           \
+  do {                                                              \
+    fprintf(stdout, "DEBUG: [%s] %s\n", pg_cop_module_info.name, a); \
   } while (0)
 
 #endif /* PG_COP_DEBUG_H */
