@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 {
   int opt = 0;
   int option_index = 0;
-  const char *conf_file = rodata_path_lua_config_file;
+  void *res;
 
   while ((opt = getopt_long(argc, argv, "h",
                             long_options, &option_index)) != -1) {
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
       exit(0);
       break;
     case 'c':
-      conf_file = optarg;
+      pg_cop_lua_config_file = optarg;
       break;
     default:
       fprintf(stderr, "%s", rodata_str_usage);
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  pg_cop_read_config(conf_file);
+  pg_cop_read_config();
   pg_cop_init_modules_table();
   pg_cop_load_modules(argc, argv);
 
@@ -47,6 +47,10 @@ int main(int argc, char *argv[])
   PG_COP_EACH_MODULE_BEGIN(pg_cop_modules_list_for_trans);
   pg_cop_hook_trans_init(_module, argc, argv);
   pg_cop_hook_trans_start(_module);
+  PG_COP_EACH_MODULE_END;
+
+  PG_COP_EACH_MODULE_BEGIN(pg_cop_modules_list_for_com);
+  pthread_join(_module->thread, &res);
   PG_COP_EACH_MODULE_END;
 
   return 0;
