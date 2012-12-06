@@ -44,6 +44,7 @@ typedef struct {
   int (*init)(int argc, char *argv[]);
   int (*process)(pg_cop_data_in_t in, pg_cop_data_out_t *out,
                  int sub_lvl);
+  int (*pack)(pg_cop_data_in_t in, pg_cop_data_out_t *out);
   int (*sweep)(pg_cop_data_out_t out);
 } pg_cop_module_proto_hooks_t;
 
@@ -94,5 +95,7 @@ int pg_cop_hook_proto_init(pg_cop_module_t *module, int argc, char *argv[]);
 int pg_cop_hook_proto_process(pg_cop_module_t *module, pg_cop_data_in_t in,
                               pg_cop_data_out_t *out, int sub_lvl);
 int pg_cop_hook_proto_sweep(pg_cop_module_t *module, pg_cop_data_out_t out);
+int pg_cop_hook_proto_pack(pg_cop_module_t *module, pg_cop_data_in_t in,
+                           pg_cop_data_out_t *out);
 
 #endif /* PG_COP_HOOKS_H */

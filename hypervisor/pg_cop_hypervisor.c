@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
 
   PG_COP_EACH_MODULE_BEGIN(pg_cop_modules_list_for_com);
   pthread_join(_module->thread, &res);
+  free(res);
   PG_COP_EACH_MODULE_END;
 
   return 0;

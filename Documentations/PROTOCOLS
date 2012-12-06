@@ -5,10 +5,9 @@ COP Protocol Family
     Bits           +--7--+--6--+--5--+--4--+--3--+--2--+--1--+--0--+
     Byte 0 ~ 3     |                    Magic Num                  |
     Byte 4         |                    Flags                      |
-    Byte 5         |                    Index                      |
-    Byte 6 ~ 8     |                    Index(ext)                 |
+    Byte 5 ~ 8     |                    Index                      |
     Byte 9 ~ 12    |                    Length                     |
-    Byte 13 ~ n    |                    Datas                      |
+    Byte 13 ~ n    |                    Data                       |
     Byte n + 1     |                    Checksum                   |
          ~ n + 4   |                                               |
                    +-----------------------------------------------+
