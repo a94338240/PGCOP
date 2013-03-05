@@ -3,6 +3,7 @@
 #include "pg_cop_debug.h"
 #include "pg_cop_hooks.h"
 #include "pg_cop_config.h"
+#include "list.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +21,8 @@ int main(int argc, char *argv[])
 {
   int opt = 0;
   int option_index = 0;
-  void *res;
+  void *res = NULL;
+  pg_cop_module_t *module = NULL;
 
   while ((opt = getopt_long(argc, argv, "h",
                             long_options, &option_index)) != -1) {
@@ -44,15 +46,24 @@ int main(int argc, char *argv[])
 
   DEBUG_INFO(rodata_str_service_started);
 
-  PG_COP_EACH_MODULE_BEGIN(pg_cop_modules_list_for_trans);
-  pg_cop_hook_trans_init(_module, argc, argv);
-  pg_cop_hook_trans_start(_module);
-  PG_COP_EACH_MODULE_END;
+  list_for_each_entry(module, &pg_cop_modules_list_for_trans->list_head, list_head) {
+    pg_cop_hook_trans_init(module, argc, argv);
+    pg_cop_hook_trans_start(module);
+  }
 
-  PG_COP_EACH_MODULE_BEGIN(pg_cop_modules_list_for_com);
-  pthread_join(_module->thread, &res);
-  free(res);
-  PG_COP_EACH_MODULE_END;
+  list_for_each_entry(module, &pg_cop_modules_list_for_com->list_head, list_head) {
+    res = NULL;
+    pthread_join(module->thread, &res);
+    if (res)
+      free(res);
+  }
+
+  list_for_each_entry(module, &pg_cop_modules_list_for_trans->list_head, list_head) {
+    res = NULL;
+    pthread_join(module->thread, &res);
+    if (res)
+      free(res);
+  }
 
   return 0;
 }

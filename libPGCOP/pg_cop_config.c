@@ -16,16 +16,13 @@ void pg_cop_read_config()
 {
   lua_State *L = (lua_State *)luaL_newstate();
   const char *filename = pg_cop_lua_config_file;
-  char debug_info[MAXLEN_LOAD_MODULE_DEBUG_INFO];
 
   if (!filename)
     filename = rodata_path_lua_config_file;
 
   if (luaL_loadfilex(L, filename, NULL) || 
       lua_pcall(L, 0, 0, 0)) {
-    sprintf(debug_info, rodata_str_lua_error, 
-            lua_tostring(L, -1));
-    DEBUG_ERROR(debug_info);
+    DEBUG_ERROR(rodata_str_lua_error, lua_tostring(L, -1));
     return;
   }
  
@@ -43,7 +40,6 @@ int pg_cop_get_module_config_strdup(const char *conf_key, char **str)
 {
   lua_State *L = (lua_State *)luaL_newstate();
   const char *filename = pg_cop_lua_config_file;
-  char debug_info[MAXLEN_LOAD_MODULE_DEBUG_INFO];
   char *tmp = strdup(conf_key);
   char *np = tmp;
   char *cp;
@@ -54,9 +50,7 @@ int pg_cop_get_module_config_strdup(const char *conf_key, char **str)
 
   if (luaL_loadfilex(L, filename, NULL) || 
       lua_pcall(L, 0, 0, 0)) {
-    sprintf(debug_info, rodata_str_lua_error, 
-            lua_tostring(L, -1));
-    DEBUG_ERROR(debug_info);
+    DEBUG_ERROR(rodata_str_lua_error, lua_tostring(L, -1));
     return -1;
   }
  
@@ -82,6 +76,8 @@ int pg_cop_get_module_config_strdup(const char *conf_key, char **str)
   }
 
  out:
+  if (res)
+    DEBUG_ERROR(rodata_str_lua_leak_args, conf_key);
   if (tmp)
     free(tmp);
   lua_close(L);
@@ -92,7 +88,6 @@ int pg_cop_get_module_config_number(const char *conf_key, int *num)
 {
   lua_State *L = (lua_State *)luaL_newstate();
   const char *filename = pg_cop_lua_config_file;
-  char debug_info[MAXLEN_LOAD_MODULE_DEBUG_INFO];
   char *tmp = strdup(conf_key);
   char *np = tmp;
   char *cp;
@@ -103,9 +98,7 @@ int pg_cop_get_module_config_number(const char *conf_key, int *num)
 
   if (luaL_loadfilex(L, filename, NULL) || 
       lua_pcall(L, 0, 0, 0)) {
-    sprintf(debug_info, rodata_str_lua_error, 
-            lua_tostring(L, -1));
-    DEBUG_ERROR(debug_info);
+    DEBUG_ERROR(rodata_str_lua_error, lua_tostring(L, -1));
     return -1;
   }
  
@@ -131,6 +124,8 @@ int pg_cop_get_module_config_number(const char *conf_key, int *num)
   }
 
  out:
+  if (res)
+    DEBUG_ERROR(rodata_str_lua_leak_args, conf_key);
   if (tmp)
     free(tmp);
   lua_close(L);
@@ -141,7 +136,6 @@ int pg_cop_get_config_strdup(const char *conf_key, char **str)
 {
   lua_State *L = (lua_State *)luaL_newstate();
   const char *filename = pg_cop_lua_config_file;
-  char debug_info[MAXLEN_LOAD_MODULE_DEBUG_INFO];
   char *tmp = strdup(conf_key);
   char *np = tmp;
   char *cp;
@@ -152,9 +146,8 @@ int pg_cop_get_config_strdup(const char *conf_key, char **str)
 
   if (luaL_loadfilex(L, filename, NULL) || 
       lua_pcall(L, 0, 0, 0)) {
-    sprintf(debug_info, rodata_str_lua_error, 
-            lua_tostring(L, -1));
-    DEBUG_ERROR(debug_info);
+    DEBUG_ERROR(rodata_str_lua_error, 
+                lua_tostring(L, -1));
     return -1;
   }
  
@@ -177,6 +170,8 @@ int pg_cop_get_config_strdup(const char *conf_key, char **str)
   }
 
  out:
+  if (res)
+    DEBUG_ERROR(rodata_str_lua_leak_args, conf_key);
   if (tmp)
     free(tmp);
   lua_close(L);
@@ -187,7 +182,6 @@ int pg_cop_get_config_number(const char *conf_key, int *num)
 {
   lua_State *L = (lua_State *)luaL_newstate();
   const char *filename = pg_cop_lua_config_file;
-  char debug_info[MAXLEN_LOAD_MODULE_DEBUG_INFO];
   char *tmp = strdup(conf_key);
   char *np = tmp;
   char *cp;
@@ -198,9 +192,8 @@ int pg_cop_get_config_number(const char *conf_key, int *num)
 
   if (luaL_loadfilex(L, filename, NULL) || 
       lua_pcall(L, 0, 0, 0)) {
-    sprintf(debug_info, rodata_str_lua_error, 
-            lua_tostring(L, -1));
-    DEBUG_ERROR(debug_info);
+    DEBUG_ERROR(rodata_str_lua_error, 
+                lua_tostring(L, -1));
     return -1;
   }
  
@@ -223,6 +216,8 @@ int pg_cop_get_config_number(const char *conf_key, int *num)
   }
 
  out:
+  if (res)
+    DEBUG_ERROR(rodata_str_lua_leak_args, conf_key);
   if (tmp)
     free(tmp);
   lua_close(L);

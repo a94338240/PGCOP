@@ -17,6 +17,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
+CFLAGS+=" -Werror -Wno-format-security"
 
 # Checks for libraries.
 AC_CHECK_LIB([dl], [dlopen])

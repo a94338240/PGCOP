@@ -22,6 +22,7 @@ const char rodata_str_unknown_protocol[] = "Protocol module loaded with no proto
 const char rodata_str_module_serv_to_you_format[] = "MODULE: %s serv to you.\r\n\r\n";
 const char rodata_str_client_disconnected[] = "Client disconnected.";
 const char rodata_str_protocol_process_skipped[] = "Protocol skipped";
+const char rodata_str_lua_leak_args[] = "%s in config file cannot be found.";
 
 const char rodata_path_lua_config_file[] = "/etc/pgcop_conf.lua";
 const char rodata_path_modules[] = "/usr/share/pgcop/modules";

@@ -2,6 +2,7 @@
 #include "pg_cop_rodata_strings.h"
 #include "pg_cop_debug.h"
 #include "pg_cop_hooks.h"
+#include "pg_cop_util.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,15 +21,15 @@ void pg_cop_init_modules_table()
 {
   pg_cop_modules_list_for_com = 
     (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t)); // INFO No free needed
-  PG_COP_LIST_HEAD(pg_cop_modules_list_for_com);
+  INIT_LIST_HEAD(&pg_cop_modules_list_for_com->list_head);
 
   pg_cop_modules_list_for_trans = 
     (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t)); // INFO No free needed
-  PG_COP_LIST_HEAD(pg_cop_modules_list_for_trans);
+  INIT_LIST_HEAD(&pg_cop_modules_list_for_trans->list_head);
 
   pg_cop_modules_list_for_proto = 
     (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t)); // INFO No free needed
-  PG_COP_LIST_HEAD(pg_cop_modules_list_for_proto);
+  INIT_LIST_HEAD(&pg_cop_modules_list_for_proto->list_head);
 }
 
 void pg_cop_load_modules(int argc, char *argv[])
@@ -36,7 +37,6 @@ void pg_cop_load_modules(int argc, char *argv[])
   DIR *module_dir;
   struct dirent *module_dir_entry;
   char file_ext[MAXLEN_MODULE_FILE_EXT] = {};
-  char debug_info[MAXLEN_LOAD_MODULE_DEBUG_INFO] = {};
   char module_path[MAXLEN_MODULE_PATH] = {};
   pg_cop_module_t *module;
   void *dl_handle;
@@ -45,8 +45,10 @@ void pg_cop_load_modules(int argc, char *argv[])
   pg_cop_module_t *list;
 
   module_dir = opendir(pg_cop_modules_path);
+
   if (!module_dir)
     DEBUG_CRITICAL(rodata_str_cannot_find_open_dir);
+
   while ((module_dir_entry = readdir(module_dir))) {
     if (!module_dir_entry->d_name)
       continue;
@@ -63,25 +65,22 @@ void pg_cop_load_modules(int argc, char *argv[])
     dl_handle = dlopen(module_path, RTLD_LAZY);
 
     if (!dl_handle) {
-      sprintf(debug_info, rodata_str_module_cannot_be_load, 
-              module_dir_entry->d_name);
-      DEBUG_ERROR(debug_info);
+      DEBUG_ERROR(rodata_str_module_cannot_be_load, 
+                  module_dir_entry->d_name);
       continue;
     }
 
     module_info = dlsym(dl_handle, "pg_cop_module_info");
     if (!module_info) {
-      sprintf(debug_info, rodata_str_module_nosym_module_info,
-              module_dir_entry->d_name);
-      DEBUG_ERROR(debug_info);
+      DEBUG_ERROR(rodata_str_module_nosym_module_info,
+                  module_dir_entry->d_name);
       continue;
     }
 
     module_hooks = dlsym(dl_handle, "pg_cop_module_hooks");
     if (!module_hooks) {
-      sprintf(debug_info, rodata_str_module_nosym_module_hooks,
-              module_dir_entry->d_name);
-      DEBUG_ERROR(debug_info);
+      DEBUG_ERROR(rodata_str_module_nosym_module_hooks,
+                  module_dir_entry->d_name);
       continue;
     }
 
@@ -89,6 +88,7 @@ void pg_cop_load_modules(int argc, char *argv[])
     module->dl_handle = dl_handle;
     module->hooks = module_hooks;
     module->info = module_info;
+    module->thread = 0;
 
     switch (module->info->type) {
     case PG_COP_MODULE_TYPE_COM:
@@ -104,17 +104,15 @@ void pg_cop_load_modules(int argc, char *argv[])
       pg_cop_hook_proto_init(module, argc, argv);
       break;
     default:
-      sprintf(debug_info, rodata_str_cannot_detect_type_of_module_format, 
-              module_dir_entry->d_name);
-      DEBUG_ERROR(debug_info);
+      DEBUG_ERROR(rodata_str_cannot_detect_type_of_module_format, 
+                  module_dir_entry->d_name);
       continue;
     }
 
-    PG_COP_LIST_ADD_TAIL(list, module);
+    list_add_tail(&module->list_head, &list->list_head);
 
-    sprintf(debug_info, rodata_str_module_loaded_format,
-            module_dir_entry->d_name);
-    DEBUG_INFO(debug_info);
+    DEBUG_INFO(rodata_str_module_loaded_format,
+               module_dir_entry->d_name);
   }
 
   closedir(module_dir);

@@ -2,45 +2,62 @@
 #define PG_COP_DEBUG_H
 #include <stdio.h>
 
-#define DEBUG_ERROR(a)                          \
-  do {                                          \
-    fprintf(stderr, "ERROR: %s\n", a);          \
+#define DEBUG_ERROR(...)              \
+  do {                                   \
+    fprintf(stderr, "ERROR: ");          \
+    fprintf(stderr, __VA_ARGS__);     \
+    fprintf(stderr, "\n");               \
   } while (0)
 
-#define DEBUG_CRITICAL(a)                                             \
-  do {                                                                \
-    fprintf(stderr, "CRITICAL: %s\n\n", a); \
-    exit(EXIT_FAILURE);                                               \
+#define DEBUG_CRITICAL(...)            \
+  do {                                    \
+    fprintf(stderr, "CRITICAL: ");        \
+    fprintf(stderr, __VA_ARGS__);      \
+    fprintf(stderr, "\n");                \
+    exit(EXIT_FAILURE);                   \
   } while (0)
 
-#define DEBUG_INFO(a)                                     \
+#define DEBUG_INFO(...)                                \
   do {                                                    \
-    fprintf(stdout, "INFO: %s\n", a);                     \
+    fprintf(stdout, "INFO: ");                            \
+    fprintf(stdout, __VA_ARGS__);                      \
+    fprintf(stdout, "\n");                                \
   } while (0)
 
-#define DEBUG_DEBUG(a)                                     \
+#define DEBUG_DEBUG(...)                               \
   do {                                                    \
-    fprintf(stdout, "DEBUG: %s\n", a);                     \
+    fprintf(stdout, "DEBUG: ");                           \
+    fprintf(stdout, __VA_ARGS__);                      \
+    fprintf(stdout, "\n");                                \
   } while (0)
 
-#define MOD_DEBUG_ERROR(a)                                           \
+#define MOD_DEBUG_ERROR(...)                                     \
   do {                                                              \
-    fprintf(stdout, "ERROR: [%s] %s\n", pg_cop_module_info.name, a); \
+    fprintf(stderr, "ERROR: [%s] ", pg_cop_module_info.name);       \
+    fprintf(stderr, __VA_ARGS__);                                \
+    fprintf(stderr, "\n");                                          \
   } while (0)
 
-#define MOD_DEBUG_CRITICAL(a)                                           \
+#define MOD_DEBUG_CRITICAL(...)                                    \
   do {                                                              \
-    fprintf(stdout, "CRITICAL: [%s] %s\n", pg_cop_module_info.name, a); \
+    fprintf(stderr, "CRITICAL: [%s] ", pg_cop_module_info.name);    \
+    fprintf(stderr, __VA_ARGS__);                                \
+    fprintf(stderr, "\n");                                       \
+    exit(EXIT_FAILURE);                                          \
   } while (0)
 
-#define MOD_DEBUG_INFO(a)                                           \
+#define MOD_DEBUG_INFO(...)                                      \
   do {                                                              \
-    fprintf(stdout, "INFO: [%s] %s\n", pg_cop_module_info.name, a); \
+    fprintf(stdout, "INFO: [%s] ", pg_cop_module_info.name);        \
+    fprintf(stdout, __VA_ARGS__);                                \
+    fprintf(stdout, "\n");                                          \
   } while (0)
 
-#define MOD_DEBUG_DEBUG(a)                                           \
+#define MOD_DEBUG_DEBUG(...)                                     \
   do {                                                              \
-    fprintf(stdout, "DEBUG: [%s] %s\n", pg_cop_module_info.name, a); \
+    fprintf(stdout, "DEBUG: [%s] ", pg_cop_module_info.name);       \
+    fprintf(stdout, __VA_ARGS__);                                \
+    fprintf(stdout, "\n");                                          \
   } while (0)
 
 #endif /* PG_COP_DEBUG_H */

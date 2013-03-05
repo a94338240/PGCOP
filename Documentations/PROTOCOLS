@@ -21,7 +21,7 @@ COP Protocol Family
     Flags
 
     Bit            +--7--+--6--+--5--+--4--+--3--+--2--+--1--+--0--+
-    Byte 4         | MLT | FIN | LOS | EXT |        Reserved       |
+    Byte 4         | MLT | FIN | LOS |              Reserved       |
                    +-----------------------------------------------+
 
         MLT
@@ -30,12 +30,8 @@ COP Protocol Family
             Last packet, if bit MLT was set.
         LOS
             Data lost, from index n.
-        EXT
-            Extent index if data too big.
     Index
         Value : Packet index if bit MLT or LOS was set.
-    Index(ext)
-        Value : Extended index when bit EXT was set.
     Length
         Value : Length of Datas and Checksum.
     Datas
