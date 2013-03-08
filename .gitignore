@@ -1,6 +1,7 @@
 *.o
 compile
 pg-cop-hypervisor
+pg-cop-tester
 *.out
 *.files
 *~

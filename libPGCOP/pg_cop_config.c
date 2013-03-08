@@ -1,6 +1,23 @@
+/*
+    PGCOP - PocoGraph Component Oriented Platform.
+    Copyright (C) 2013  David Wu <david@pocograph.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "pg_cop_config.h"
 #include "pg_cop_modules.h"
-#include "pg_cop_rodata_strings.h"
 #include "pg_cop_debug.h"
 
 #include <string.h>
@@ -12,18 +29,18 @@
 const char *pg_cop_lua_config_file = NULL;
 
 
-void pg_cop_read_config()
+int pg_cop_read_config()
 {
   lua_State *L = (lua_State *)luaL_newstate();
   const char *filename = pg_cop_lua_config_file;
 
   if (!filename)
-    filename = rodata_path_lua_config_file;
+    filename = "/etc/pgcop_conf.lua";
 
   if (luaL_loadfilex(L, filename, NULL) || 
       lua_pcall(L, 0, 0, 0)) {
-    DEBUG_ERROR(rodata_str_lua_error, lua_tostring(L, -1));
-    return;
+    DEBUG_ERROR("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
+    return -1;
   }
  
   lua_getglobal(L, "pgcop");
@@ -34,6 +51,7 @@ void pg_cop_read_config()
   }
 
   lua_close(L);
+  return 0;
 }
 
 int pg_cop_get_module_config_strdup(const char *conf_key, char **str)
@@ -46,11 +64,11 @@ int pg_cop_get_module_config_strdup(const char *conf_key, char **str)
   int res = -1;
 
   if (!filename)
-    filename = rodata_path_lua_config_file;
+    filename = "/etc/pgcop_conf.lua";
 
   if (luaL_loadfilex(L, filename, NULL) || 
       lua_pcall(L, 0, 0, 0)) {
-    DEBUG_ERROR(rodata_str_lua_error, lua_tostring(L, -1));
+    DEBUG_ERROR("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
     return -1;
   }
  
@@ -77,7 +95,7 @@ int pg_cop_get_module_config_strdup(const char *conf_key, char **str)
 
  out:
   if (res)
-    DEBUG_ERROR(rodata_str_lua_leak_args, conf_key);
+    DEBUG_ERROR("Config key %s not be found.", conf_key);
   if (tmp)
     free(tmp);
   lua_close(L);
@@ -94,11 +112,11 @@ int pg_cop_get_module_config_number(const char *conf_key, int *num)
   int res = -1;
 
   if (!filename)
-    filename = rodata_path_lua_config_file;
+    filename = "/etc/pgcop_conf.lua";
 
   if (luaL_loadfilex(L, filename, NULL) || 
       lua_pcall(L, 0, 0, 0)) {
-    DEBUG_ERROR(rodata_str_lua_error, lua_tostring(L, -1));
+    DEBUG_ERROR("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
     return -1;
   }
  
@@ -125,7 +143,7 @@ int pg_cop_get_module_config_number(const char *conf_key, int *num)
 
  out:
   if (res)
-    DEBUG_ERROR(rodata_str_lua_leak_args, conf_key);
+    DEBUG_ERROR("Config key %s not be found.", conf_key);
   if (tmp)
     free(tmp);
   lua_close(L);
@@ -142,12 +160,11 @@ int pg_cop_get_config_strdup(const char *conf_key, char **str)
   int res = -1;
 
   if (!filename)
-    filename = rodata_path_lua_config_file;
+    filename = "/etc/pgcop_conf.lua";
 
   if (luaL_loadfilex(L, filename, NULL) || 
       lua_pcall(L, 0, 0, 0)) {
-    DEBUG_ERROR(rodata_str_lua_error, 
-                lua_tostring(L, -1));
+    DEBUG_ERROR("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
     return -1;
   }
  
@@ -171,7 +188,7 @@ int pg_cop_get_config_strdup(const char *conf_key, char **str)
 
  out:
   if (res)
-    DEBUG_ERROR(rodata_str_lua_leak_args, conf_key);
+    DEBUG_ERROR("Config key %s not be found.", conf_key);
   if (tmp)
     free(tmp);
   lua_close(L);
@@ -188,12 +205,11 @@ int pg_cop_get_config_number(const char *conf_key, int *num)
   int res = -1;
 
   if (!filename)
-    filename = rodata_path_lua_config_file;
+    filename = "/etc/pgcop_conf.lua";
 
   if (luaL_loadfilex(L, filename, NULL) || 
       lua_pcall(L, 0, 0, 0)) {
-    DEBUG_ERROR(rodata_str_lua_error, 
-                lua_tostring(L, -1));
+    DEBUG_ERROR("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
     return -1;
   }
  
@@ -217,7 +233,7 @@ int pg_cop_get_config_number(const char *conf_key, int *num)
 
  out:
   if (res)
-    DEBUG_ERROR(rodata_str_lua_leak_args, conf_key);
+    DEBUG_ERROR("Config key %s not be found.", conf_key);
   if (tmp)
     free(tmp);
   lua_close(L);

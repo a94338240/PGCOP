@@ -14,9 +14,8 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-bin_PROGRAMS = pg-cop-hypervisor
-pg_cop_hypervisor_SOURCES = pg_cop_hypervisor.c \
-                            pg_cop_hypervisor.h
-pg_cop_hypervisor_LDADD = ../libPGCOP/libPGCOP.la
-pg_cop_hypervisor_CFLAGS = -I ../libPGCOP
+noinst_PROGRAMS = pg-cop-tester
+pg_cop_tester_SOURCES = pg_cop_tester.c
+pg_cop_tester_LDADD = ../libPGCOP/libPGCOP.la
+pg_cop_tester_CFLAGS = -I ../libPGCOP
 
