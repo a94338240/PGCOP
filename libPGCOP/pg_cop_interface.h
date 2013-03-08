@@ -22,8 +22,21 @@
 #include "pg_cop_modules.h"
 #include "pg_cop_vstack.h"
 
+#define MAGIC_START_INVOKE (0xE7381721)
+#define MAGIC_START_RETURN (0xE7383322)
+
+typedef enum {
+  MODULE_INTERFACE_TYPE_THREAD,
+  MODULE_INTERFACE_TYPE_PROCESS,
+  MODULE_INTERFACE_TYPE_SOCKET_TCP,
+  MODULE_INTERFACE_TYPE_SOCKET_TCP_BACK,
+  MODULE_INTERFACE_TYPE_SOCKET_UDP,
+} pg_cop_module_interface_type_t;
+
 typedef struct _pg_cop_module_interface_t {
+  pg_cop_module_interface_type_t type;
   pg_cop_vstack_t *vstack;
+  int connection_id;
   const char *mod_name;
   sem_t recv_sem;
   struct _pg_cop_module_interface_t *peer;
@@ -34,9 +47,8 @@ typedef struct {
   struct list_head list_head;
 } pg_cop_module_interface_announcement_t;
 
-pg_cop_module_interface_t * pg_cop_module_interface_announce(pg_cop_module_t *,
-                                                             pg_cop_vstack_scope_t);
-pg_cop_module_interface_t *pg_cop_module_interface_connect(const char *);
+int pg_cop_module_interface_announce(pg_cop_module_interface_t *intf);
+int pg_cop_module_interface_connect(pg_cop_module_interface_t *, const char *);
 int pg_cop_module_interface_disconnect(pg_cop_module_interface_t *);
 int pg_cop_module_interface_invoke(pg_cop_module_interface_t *, const char *, 
                                    int, ...);
@@ -47,7 +59,7 @@ int pg_cop_module_interface_wait(pg_cop_module_interface_t *, char ** method);
   pg_cop_vstack_pop(intf->vstack, type, __VA_ARGS__)
 #define pg_cop_module_interface_push(intf, type, ...) \
   pg_cop_vstack_push(intf->vstack, type, __VA_ARGS__)
-int pg_cop_module_interface_outgoing_thread(pg_cop_module_interface_t *);
-int pg_cop_module_interface_incoming_thread(pg_cop_module_interface_t *);
-int pg_cop_module_interface_tracker_init();
+int pg_cop_module_interface_tracker_init();pg_cop_module_interface_t *pg_cop_module_interface_new(const char *name, 
+                                                                                                  pg_cop_module_interface_type_t type);
+
 #endif /* PG_COP_INTERFACE_H */

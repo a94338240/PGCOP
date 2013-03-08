@@ -22,14 +22,17 @@
 #include <string.h>
 #include <stdarg.h>
 
-pg_cop_vstack_t *pg_cop_vstack_new(int id, int size, pg_cop_vstack_scope_t scope)
+pg_cop_vstack_t *pg_cop_vstack_new(int id, int size)
 {
   pg_cop_vstack_t *vstack = NULL;
   vstack = malloc(sizeof(pg_cop_vstack_t) + size);
+  if (vstack == NULL) {
+    DEBUG_ERROR("cannot allocate memory for Vstack");
+    return NULL;
+  }
   vstack->id = id;
   vstack->size = size;
   vstack->top = 0;
-  vstack->scope = scope;
   return vstack;
 }
 
@@ -189,4 +192,36 @@ int pg_cop_vstack_pick_type(pg_cop_vstack_t *vstack, pg_cop_vstack_type_t *type)
   
    *type = *((pg_cop_vstack_type_t *)(&vstack->data_area[vstack->top - sizeof(int)]));
    return 0;
+}
+
+int pg_cop_vstack_used_bytes(pg_cop_vstack_t *vstack)
+{
+  return vstack->top;
+}
+
+void *pg_cop_vstack_dump(pg_cop_vstack_t *vstack)
+{
+  void *dump;
+  if (vstack->top == 0)
+    return NULL;
+  dump = malloc(vstack->top);
+  memcpy(dump, vstack->data_area, vstack->top);
+  return dump;
+}
+
+int pg_cop_vstack_has_more(pg_cop_vstack_t *vstack)
+{
+  return vstack->top;
+}
+
+int pg_cop_vstack_clear(pg_cop_vstack_t *vstack)
+{
+  return vstack->top = 0;
+}
+
+int pg_cop_vstack_import(pg_cop_vstack_t *vstack, void *data, int size)
+{
+  vstack->top = size;
+  memcpy(vstack->data_area, data, size);
+  return 0;
 }
