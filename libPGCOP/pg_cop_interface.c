@@ -36,6 +36,116 @@
 
 pg_cop_module_interface_announcement_t *announced_modules = NULL;
 
+static int _interface_request_send(pg_cop_module_interface_t *intf,
+                                   int call_type)
+{
+  int header_line;
+  int retval;
+  void *stack_dump;
+
+  header_line = call_type;
+  retval = send(intf->peer->connection_id, &header_line,
+                sizeof(int), 0);
+  if (retval <= 0)
+    goto out;
+
+  header_line = strlen(intf->mod_name) + 1;
+  retval = send(intf->peer->connection_id, &header_line,
+                sizeof(int), 0);
+  if (retval <= 0)
+    goto out;
+  retval = send(intf->peer->connection_id, intf->mod_name,
+                header_line, 0);
+  if (retval <= 0)
+    goto out;
+
+  header_line = strlen(intf->peer->mod_name) + 1;
+  retval = send(intf->peer->connection_id, &header_line,
+                sizeof(int), 0);
+  if (retval <= 0)
+    goto out;
+  retval = send(intf->peer->connection_id, intf->peer->mod_name,
+                header_line, 0);
+  if (retval <= 0)
+    goto out;
+
+  header_line = pg_cop_vstack_used_bytes(intf->vstack);
+  retval = send(intf->peer->connection_id, &header_line,
+                sizeof(int), 0);
+  if (retval <= 0)
+    goto out;
+
+  stack_dump = pg_cop_vstack_dump(intf->vstack);
+  retval = send(intf->peer->connection_id, stack_dump, 
+                header_line, 0);
+  if (retval <= 0)
+    goto out;
+  pg_cop_vstack_clear(intf->vstack);
+  free(stack_dump);
+  return 0;
+
+ out:
+  return -1;
+}
+
+static int _interface_request_recv(int sockfd,
+                                   int *call_type,
+                                   pg_cop_vstack_t **vstack,
+                                   char **mod_name,
+                                   char **mod_name_from)
+{
+  int retval;
+  int header_line;
+  char *buffer;
+
+ retry:
+  retval = recv(sockfd, &header_line, sizeof(int), MSG_WAITALL);
+  if (retval <= 0)
+    goto out;
+  if (header_line != MAGIC_START_INVOKE && header_line != MAGIC_START_RETURN)
+    goto retry;
+  *call_type = header_line;
+  DEBUG_INFO("Tracker: Start receiving. type=%d", *call_type);
+
+  retval = recv(sockfd, &header_line, sizeof(int), MSG_WAITALL);
+  if (retval <= 0)
+    goto out;
+
+  *mod_name_from = malloc(header_line);
+  retval = recv(sockfd, *mod_name_from, header_line, MSG_WAITALL);
+  if (retval <= 0)
+    goto out;
+  DEBUG_INFO("Tracker: From=%s", *mod_name_from);
+
+  retval = recv(sockfd, &header_line, sizeof(int), MSG_WAITALL);
+  if (retval <= 0)
+    goto out;
+
+  *mod_name = malloc(header_line);
+  retval = recv(sockfd, *mod_name, header_line, MSG_WAITALL); 
+  if (retval <= 0)
+    goto out;
+  DEBUG_INFO("Tracker: To=%s", *mod_name);
+
+  retval = recv(sockfd, &header_line, sizeof(int), MSG_WAITALL);
+  if (retval <= 0)
+    goto out;
+  buffer = malloc(header_line);
+  retval = recv(sockfd, buffer, header_line, MSG_WAITALL);
+  if (retval <= 0)
+    goto out;
+  DEBUG_INFO("Tracker: Vstack size=%d", header_line);
+
+  *vstack = pg_cop_vstack_new(0, header_line);
+  pg_cop_vstack_import(*vstack, buffer, header_line);
+
+  free(buffer);
+  return 0;
+
+ out:
+  return -1;
+}
+
 static int _interface_connect(pg_cop_module_interface_t *intf, 
                               pg_cop_module_interface_t *peer) 
 {
@@ -44,9 +154,13 @@ static int _interface_connect(pg_cop_module_interface_t *intf,
 
   switch (peer->type) {
   case MODULE_INTERFACE_TYPE_THREAD:
-  case MODULE_INTERFACE_TYPE_SOCKET_TCP_BACK:
     break;
   case MODULE_INTERFACE_TYPE_SOCKET_TCP:
+    if (!strcmp(peer->mod_name, "CALLBACK"))
+      break;
+    // FIXME Check connection;
+    if (peer->connection_id >= 0)
+      break;
     peer->connection_id = socket(AF_INET, SOCK_STREAM, 0);
     bzero((char *)&remote_addr, sizeof(remote_addr));
     host_info = gethostbyname("127.0.0.1");
@@ -70,68 +184,33 @@ static int _interface_connect(pg_cop_module_interface_t *intf,
   return 0;
 }
 
+static int _interface_disconnect(pg_cop_module_interface_t *intf)
+{
+  intf->peer = NULL;
+  return 0;
+}
+
 static void *_interface_tracker_cli(void *arg)
 {
   int sockfd = *((int *)arg);
-  int retval = 0;
-  int header_line;
-  int call_type = 0;
   char *mod_name;
   char *mod_name_from;
-  char *buffer;
-  pg_cop_module_interface_t *intf_cli;
-  pg_cop_module_interface_t *intf_mod;
+  pg_cop_module_interface_t *intf_cli = NULL;
+  pg_cop_module_interface_t *intf_mod = NULL;
   pg_cop_vstack_t *vstack;
   pg_cop_module_interface_announcement_t *announce;
   int found = 0;
+  int call_type;
+
+  intf_cli = pg_cop_module_interface_new("CALLBACK", 
+                                         MODULE_INTERFACE_TYPE_SOCKET_TCP);
+  intf_cli->connection_id = sockfd;
 
   while (1) {
-  retry:
-    retval = recv(sockfd, &header_line, sizeof(int), MSG_WAITALL);
-    if (retval <= 0)
-      goto out;
-    if (header_line != MAGIC_START_INVOKE && header_line != MAGIC_START_RETURN)
-      goto retry;
-    call_type = header_line;
-    DEBUG_INFO("Tracker: Start receiving. type=%d", call_type);
-
-    retval = retval = recv(sockfd, &header_line, sizeof(int), MSG_WAITALL);
-    if (retval <= 0)
+    if (_interface_request_recv(sockfd, &call_type, 
+                                &vstack, &mod_name, &mod_name_from) != 0)
       goto out;
 
-    mod_name_from = malloc(header_line);
-    retval = recv(sockfd, mod_name_from, header_line, MSG_WAITALL);
-    if (retval <= 0)
-      goto out;
-    DEBUG_INFO("Tracker: From=%s", mod_name_from);
-
-    retval = recv(sockfd, &header_line, sizeof(int), MSG_WAITALL);
-    if (retval <= 0)
-      goto out;
-
-    mod_name = malloc(header_line);
-    retval = recv(sockfd, mod_name, header_line, MSG_WAITALL); 
-    if (retval <= 0)
-      goto out;
-    DEBUG_INFO("Tracker: To=%s", mod_name);
-
-    retval = recv(sockfd, &header_line, sizeof(int), MSG_WAITALL);
-    if (retval <= 0)
-      goto out;
-    buffer = malloc(header_line);
-    retval = recv(sockfd, buffer, header_line, MSG_WAITALL);
-    if (retval <= 0)
-      goto out;
-    DEBUG_INFO("Tracker: Vstack size=%d", header_line);
-
-    vstack = pg_cop_vstack_new(0, header_line);
-    pg_cop_vstack_import(vstack, buffer, header_line);
-
-    if (call_type == MAGIC_START_INVOKE) {
-      intf_cli = pg_cop_module_interface_new(mod_name_from, 
-                                             MODULE_INTERFACE_TYPE_SOCKET_TCP_BACK);
-      intf_cli->connection_id = sockfd;
-    }
     list_for_each_entry(announce, &announced_modules->list_head, 
                         list_head) {
       if (strcmp(announce->intf->mod_name, mod_name) == 0 &&
@@ -159,14 +238,14 @@ static void *_interface_tracker_cli(void *arg)
       DEBUG_INFO("Cannot find request module. %s", mod_name);
     }
     pg_cop_vstack_destroy(vstack);
-    free(buffer);
     free(mod_name);
+    free(mod_name_from);
   }
 
  out:
-  free(mod_name_from);
+  close(intf_cli->connection_id);
+  pg_cop_module_interface_destroy(intf_cli);
   DEBUG_INFO("Client disconnected.");
-
   return NULL;
 }
 
@@ -185,19 +264,23 @@ static void *_interface_tracker(void *arg)
   serv_addr.sin_port = htons(12728);
   serv_addr.sin_addr.s_addr = INADDR_ANY;
 
+ retry_bind:
   if (bind(sockfd, (struct sockaddr *)&serv_addr,
            sizeof(serv_addr)) < 0) {
-    DEBUG_ERROR("Failed to bind on port %d.", ntohs(serv_addr.sin_port));
-    return NULL;
+    DEBUG_ERROR("Failed to bind on port %d. retrying...", ntohs(serv_addr.sin_port));
+    sleep(1);
+    goto retry_bind;
   }
 
+ retry_listen:
   if (listen(sockfd, 5)) {
-    DEBUG_ERROR("Failed to listen on port. %d", ntohs(serv_addr.sin_port));
-    return NULL;
+    DEBUG_ERROR("Failed to listen on port. %d, retrying...", ntohs(serv_addr.sin_port));
+    sleep(1);
+    goto retry_listen;
   }
   DEBUG_INFO("Listen on port %d", ntohs(serv_addr.sin_port));
 
-  while (sockfd_cli = accept(sockfd, NULL, 0)) {
+  while ((sockfd_cli = accept(sockfd, NULL, 0))) {
     retval = pthread_attr_init(&attr);
     if (retval != 0) {
       DEBUG_ERROR("Cannot create thread attributes.");
@@ -209,6 +292,9 @@ static void *_interface_tracker(void *arg)
       return NULL;
     }
   }
+
+  DEBUG_INFO("Server down");
+  close(sockfd);
 
   return NULL;
 }
@@ -233,6 +319,8 @@ int pg_cop_module_interface_tracker_init()
     DEBUG_ERROR("Cannot create thread.");
     return -1;
   }
+
+  return 0;
 }
 
 int pg_cop_module_interface_wait(pg_cop_module_interface_t *intf, char **method)
@@ -240,7 +328,8 @@ int pg_cop_module_interface_wait(pg_cop_module_interface_t *intf, char **method)
   sem_wait(&intf->recv_sem);
   
   if (!pg_cop_vstack_pop(intf->vstack, VSTACK_TYPE_STRING, method))
-  return 0;
+    return 0;
+  return -1;
 }
 
 pg_cop_module_interface_t *pg_cop_module_interface_new(const char *name, 
@@ -252,16 +341,29 @@ pg_cop_module_interface_t *pg_cop_module_interface_new(const char *name,
   intf->mod_name = name;
   intf->type = type;
   intf->peer = NULL;
+  intf->connection_id = -1;
   sem_init(&intf->recv_sem, 0, 0);
 
   return intf;
 }
 
-int pg_cop_module_interface_connect(pg_cop_module_interface_t *intf, 
-                                    const char *name)
+int pg_cop_module_interface_destroy(pg_cop_module_interface_t *intf)
+{
+  if (intf) {
+    pg_cop_vstack_destroy(intf->vstack);
+    sem_destroy(&intf->recv_sem);
+    free(intf);
+    return 0;
+  }
+  return -1;
+}
+
+pg_cop_module_interface_t *pg_cop_module_interface_connect(const char *name)
 {
   pg_cop_module_interface_announcement_t *announce;
   int found = 0;
+  pg_cop_module_interface_t *intf = NULL;
+  intf = pg_cop_module_interface_new(name, MODULE_INTERFACE_TYPE_THREAD);
 
   for (;;) {
     list_for_each_entry(announce, &announced_modules->list_head, 
@@ -275,18 +377,16 @@ int pg_cop_module_interface_connect(pg_cop_module_interface_t *intf,
       break;
     sleep(1);
   }
-  return 0;
+  return intf;
 }
 
 int pg_cop_module_interface_disconnect(pg_cop_module_interface_t *intf)
 {
   if (!intf)
     return -1;
-  if (intf->vstack)
-    free(intf->vstack);
-  sem_destroy(&intf->recv_sem);
-  if (intf)
-    free(intf);
+  _interface_disconnect(intf);
+  pg_cop_module_interface_destroy(intf);
+  return 0;
 }
 
 int pg_cop_module_interface_invoke(pg_cop_module_interface_t *intf, 
@@ -294,14 +394,9 @@ int pg_cop_module_interface_invoke(pg_cop_module_interface_t *intf,
 {
   va_list va;
   pg_cop_vstack_type_t type;
-  int size;
-  int retval = 0;
-  int i, found = 0;
-  void *stack_dump;
-  int header_line = 0;
+  int i = 0;
   char *mod_name;
   char *mod_name_from;
-  char *buffer;
   pg_cop_vstack_t *vstack;
   int call_type;
 
@@ -340,89 +435,17 @@ int pg_cop_module_interface_invoke(pg_cop_module_interface_t *intf,
     break;
   case MODULE_INTERFACE_TYPE_SOCKET_TCP:
     if (pg_cop_vstack_has_more(intf->vstack)) {
-      header_line = MAGIC_START_INVOKE;
-      retval = send(intf->peer->connection_id, &header_line,
-           sizeof(int), 0);
-      if (retval <= 0)
+      if (_interface_request_send(intf,
+                                  MAGIC_START_INVOKE) != 0)
         goto out;
-
-      header_line = strlen(intf->mod_name) + 1;
-      retval = send(intf->peer->connection_id, &header_line,
-           sizeof(int), 0);
-      if (retval <= 0)
+      if (_interface_request_recv(intf->peer->connection_id, &call_type, 
+                                  &vstack, &mod_name, &mod_name_from) != 0)
         goto out;
-      retval = send(intf->peer->connection_id, intf->mod_name,
-           header_line, 0);
-      if (retval <= 0)
-        goto out;
-
-      header_line = strlen(intf->peer->mod_name) + 1;
-      retval = send(intf->peer->connection_id, &header_line,
-           sizeof(int), 0);
-      if (retval <= 0)
-        goto out;
-      retval = send(intf->peer->connection_id, intf->peer->mod_name,
-           header_line, 0);
-      if (retval <= 0)
-        goto out;
-
-
-      header_line = pg_cop_vstack_used_bytes(intf->vstack);
-      retval = send(intf->peer->connection_id, &header_line,
-           sizeof(int), 0);
-      if (retval <= 0)
-        goto out;
-
-      stack_dump = pg_cop_vstack_dump(intf->vstack);
-      retval = send(intf->peer->connection_id, stack_dump, 
-           header_line, 0);
-      if (retval <= 0)
-        goto out;
-      pg_cop_vstack_clear(intf->vstack);
-      free(stack_dump);
-
-    retry:
-      retval = recv(intf->peer->connection_id, &header_line, sizeof(int), MSG_WAITALL);
-      if (retval <= 0)
-        goto out;
-      if (header_line != MAGIC_START_INVOKE && header_line != MAGIC_START_RETURN)
-        goto retry;
-      call_type = header_line;
-      DEBUG_INFO("Tracker: Start receiving. type=%d", call_type);
-
-      retval = recv(intf->peer->connection_id, &header_line, sizeof(int), MSG_WAITALL);
-      if (retval <= 0)
-        goto out;
-
-      mod_name_from = malloc(header_line);
-      retval = recv(intf->peer->connection_id, mod_name_from, header_line, MSG_WAITALL);
-      if (retval <= 0)
-        goto out;
-      DEBUG_INFO("Tracker: From=%s", mod_name_from);
-
-      retval = recv(intf->peer->connection_id, &header_line, sizeof(int), MSG_WAITALL);
-      if (retval <= 0)
-        goto out;
-
-      mod_name = malloc(header_line);
-      retval = recv(intf->peer->connection_id, mod_name, header_line, MSG_WAITALL);
-      if (retval <= 0)
-        goto out;
-      DEBUG_INFO("Tracker: To=%s", mod_name);
-
-      retval = recv(intf->peer->connection_id, &header_line, sizeof(int), MSG_WAITALL);
-      if (retval <= 0)
-        goto out;
-      buffer = malloc(header_line);
-      retval = recv(intf->peer->connection_id, buffer, header_line, MSG_WAITALL);
-      if (retval <= 0)
-        goto out;
-      DEBUG_INFO("Tracker: Vstack size=%d", header_line);
-
-      vstack = pg_cop_vstack_new(0, header_line);
-      pg_cop_vstack_import(vstack, buffer, header_line);
       pg_cop_vstack_transfer(vstack, intf->vstack);
     }
+  free(mod_name_from);
+  free(mod_name);
+  pg_cop_vstack_destroy(vstack);
     break;
   default:
     return -1;
@@ -431,6 +454,7 @@ int pg_cop_module_interface_invoke(pg_cop_module_interface_t *intf,
   return 0;
 
  out:
+  intf->peer->connection_id = -1;
   DEBUG_INFO("Peer disconnected.");
   return -1;
 }
@@ -439,11 +463,7 @@ int pg_cop_module_interface_return(pg_cop_module_interface_t *intf, int num, ...
 {
   va_list va;
   pg_cop_vstack_type_t type;
-  int size;
-  int retval = 0;
-  int i, found = 0;
-  void *stack_dump;
-  int header_line;
+  int i;
 
   if (intf == NULL || intf->peer == NULL || num < 0)
     return -1;
@@ -473,49 +493,11 @@ int pg_cop_module_interface_return(pg_cop_module_interface_t *intf, int num, ...
     pg_cop_vstack_transfer(intf->vstack, intf->peer->vstack);
     sem_post(&intf->peer->recv_sem);
     break;
-  case MODULE_INTERFACE_TYPE_SOCKET_TCP_BACK:
+  case MODULE_INTERFACE_TYPE_SOCKET_TCP:
     if (pg_cop_vstack_has_more(intf->vstack)) {
-      header_line = MAGIC_START_RETURN;
-      retval = send(intf->peer->connection_id, &header_line,
-                    sizeof(int), 0);
-      if (retval <= 0)
+      if (_interface_request_send(intf,
+                                  MAGIC_START_RETURN) != 0)
         goto out;
-
-      header_line = strlen(intf->mod_name) + 1;
-      retval = send(intf->peer->connection_id, &header_line,
-                    sizeof(int), 0);
-      if (retval <= 0)
-        goto out;
-      retval = send(intf->peer->connection_id, intf->mod_name,
-                    header_line, 0);
-      if (retval <= 0)
-        goto out;
-
-      header_line = strlen(intf->peer->mod_name) + 1;
-      retval = send(intf->peer->connection_id, &header_line,
-                    sizeof(int), 0);
-      if (retval <= 0)
-        goto out;
-
-      retval = send(intf->peer->connection_id, intf->peer->mod_name,
-                    header_line, 0);
-      if (retval <= 0)
-        goto out;
-
-      header_line = pg_cop_vstack_used_bytes(intf->vstack);
-      retval = send(intf->peer->connection_id, &header_line,
-                    sizeof(int), 0);
-      if (retval <= 0)
-        goto out;
-
-      stack_dump = pg_cop_vstack_dump(intf->vstack);
-      retval = send(intf->peer->connection_id, stack_dump, 
-                    header_line, 0);
-      if (retval <= 0)
-        goto out;
-
-      pg_cop_vstack_clear(intf->vstack);
-      free(stack_dump);
     }
     break;
   default:
@@ -525,19 +507,37 @@ int pg_cop_module_interface_return(pg_cop_module_interface_t *intf, int num, ...
   return 0;
 
  out:
+  intf->peer->connection_id = -1;
   DEBUG_INFO("Peer disconnected.");
   return -1;
 }
 
-int pg_cop_module_interface_announce(pg_cop_module_interface_t *intf)
+pg_cop_module_interface_t *pg_cop_module_interface_announce(const char *name,
+                                                            pg_cop_module_interface_type_t type)
 {
   pg_cop_module_interface_announcement_t * announce = 
     (pg_cop_module_interface_announcement_t *)malloc
     (sizeof(pg_cop_module_interface_announcement_t));
+  pg_cop_module_interface_t *intf = pg_cop_module_interface_new(name, type);
 
   announce->intf = intf;
   list_add_tail(&announce->list_head, &announced_modules->list_head);
 
-  return 0;
+  return intf;
 }
 
+int pg_cop_module_interface_revoke(pg_cop_module_interface_t *intf)
+{
+  pg_cop_module_interface_announcement_t *announce, *announce_tmp;
+
+  list_for_each_entry_safe(announce, announce_tmp,
+                           &announced_modules->list_head, list_head) {
+    if (announce->intf == intf) {
+      pg_cop_module_interface_destroy(announce->intf);
+      list_del(&announce->list_head);
+      free(announce);
+    }
+  }
+
+  return 0;
+}

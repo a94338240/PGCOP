@@ -46,11 +46,13 @@ pg_cop_vstack_state_t pg_cop_vstack_push(pg_cop_vstack_t *vstack,
                                          pg_cop_vstack_type_t type, ...)
 {
   va_list va;
-  int data_size = 0;
+  int data_size;
   unsigned int tmp_u32;
   int tmp_i32;
+  pg_cop_vstack_type_t *type_alias;
+  int *size_alias;
 
-  void *data = 0;
+  void *data;
   
   va_start(va, type);
   switch (type) {
@@ -85,8 +87,11 @@ pg_cop_vstack_state_t pg_cop_vstack_push(pg_cop_vstack_t *vstack,
     return -VSTACK_OVERFLOW;
 
   vstack->top += sizeof(int) * 2 + data_size;
-  *((pg_cop_vstack_type_t *)(&vstack->data_area[vstack->top - sizeof(int)])) = type;
-  *((int *)(&vstack->data_area[vstack->top - sizeof(int) * 2])) = data_size;
+  type_alias = (pg_cop_vstack_type_t *)
+    (&vstack->data_area[vstack->top - sizeof(int)]);
+  *type_alias = type;
+  size_alias = (int *)(&vstack->data_area[vstack->top - sizeof(int) * 2]);
+  *size_alias = data_size;
   memcpy(&vstack->data_area[vstack->top - sizeof(int) * 2 - data_size], data, data_size);
   return VSTACK_OK;
 }
@@ -94,17 +99,22 @@ pg_cop_vstack_state_t pg_cop_vstack_push(pg_cop_vstack_t *vstack,
 pg_cop_vstack_state_t pg_cop_vstack_pop(pg_cop_vstack_t *vstack, 
                                         pg_cop_vstack_type_t type, ...)
 {
-  int data_size = 0;
+  int data_size;
   pg_cop_vstack_type_t data_type;
   void *data_tmp;
   void *output;
   va_list va;
+  pg_cop_vstack_type_t *type_alias;
+  int *size_alias;
 
   if (vstack->top <= 0)
     return -VSTACK_EMPTY;
 
-  data_type = *((pg_cop_vstack_type_t *)(&vstack->data_area[vstack->top - sizeof(int)]));
-  data_size = *((int *)(&vstack->data_area[vstack->top - sizeof(int) * 2]));
+  type_alias = (pg_cop_vstack_type_t *)
+    (&vstack->data_area[vstack->top - sizeof(int)]);
+  data_type = *type_alias;
+  size_alias = (int *)(&vstack->data_area[vstack->top - sizeof(int) * 2]);
+  data_size = *size_alias;
   data_tmp = &vstack->data_area[vstack->top - sizeof(int) * 2 - data_size];
 
   if (data_type != type) {
@@ -173,7 +183,7 @@ pg_cop_vstack_state_t pg_cop_vstack_transfer(pg_cop_vstack_t *s_vstack,
       free(sdata);
       break;
     case VSTACK_TYPE_DATASIZE:
-      pg_cop_vstack_pop(s_vstack, type, &sdata, size);
+      pg_cop_vstack_pop(s_vstack, type, &sdata, &size);
       pg_cop_vstack_push(d_vstack, type, sdata, size);
       free(sdata);
       break;
@@ -187,11 +197,15 @@ pg_cop_vstack_state_t pg_cop_vstack_transfer(pg_cop_vstack_t *s_vstack,
 
 int pg_cop_vstack_pick_type(pg_cop_vstack_t *vstack, pg_cop_vstack_type_t *type)
 {
+  pg_cop_vstack_type_t *type_alias;
+
   if (vstack->top <= 0)
     return -VSTACK_EMPTY;
   
-   *type = *((pg_cop_vstack_type_t *)(&vstack->data_area[vstack->top - sizeof(int)]));
-   return 0;
+  type_alias = (pg_cop_vstack_type_t *)
+    (&vstack->data_area[vstack->top - sizeof(int)]);
+  *type = *type_alias;
+  return 0;
 }
 
 int pg_cop_vstack_used_bytes(pg_cop_vstack_t *vstack)

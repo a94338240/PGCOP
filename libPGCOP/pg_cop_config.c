@@ -50,6 +50,9 @@ int pg_cop_read_config()
       pg_cop_modules_path = strdup(lua_tostring(L, -1));
   }
 
+  if (pg_cop_modules_path == NULL)
+    pg_cop_modules_path = "/usr/local/pgcop/share/pgcop/modules";
+
   lua_close(L);
   return 0;
 }

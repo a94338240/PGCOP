@@ -33,9 +33,8 @@
 #include <unistd.h>
 
 pg_cop_module_t *pg_cop_modules_list = NULL;
-static int vstack_id = 0;
 
-const char *pg_cop_modules_path = "/usr/local/pgcop/share/pgcop/modules";
+char *pg_cop_modules_path = NULL;
 
 int pg_cop_init_modules_table()
 {
@@ -57,8 +56,6 @@ int pg_cop_load_modules(int argc, char *argv[])
   void *dl_handle;
   void *module_hooks;
   pg_cop_module_info_t *module_info;
-  pg_cop_module_t *list;
-  pg_cop_vstack_t *vstack;
 
   if (!pg_cop_modules_list)
     return -1;
