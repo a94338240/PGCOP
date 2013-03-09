@@ -165,7 +165,6 @@ static int pg_cop_interface_remote_invoke_test(const char **name) {
 
   intf_remote = pg_cop_module_interface_announce("mod_tester_remote", 
                                                  MODULE_INTERFACE_TYPE_SOCKET_TCP);
-
   // Call twice
   intf_tester = pg_cop_module_interface_connect("mod_tester_remote");
   assert(intf_tester);
@@ -195,6 +194,7 @@ static int pg_cop_interface_remote_invoke_test(const char **name) {
   assert(strcmp(res, "pong REMOTE TEST MESSAGE 2") == 0);
   free(res);
   assert(pg_cop_module_interface_disconnect(intf_tester) == 0);
+  DEBUG_INFO("TYPE=%d get", intf_remote->type);
   assert(pg_cop_module_interface_revoke(intf_remote) == 0);
   return 0;
 }
@@ -206,7 +206,7 @@ typedef struct {
 
 test_case_t test_cases[] = {
   {pg_cop_vstack_test, 50},
-  {pg_cop_modules_load_test, 2},
+  {pg_cop_modules_load_test, 1},
   {pg_cop_vstack_transfer_test, 50},
   {pg_cop_interface_invoke_test, 50},
   {pg_cop_interface_remote_invoke_test, 50},

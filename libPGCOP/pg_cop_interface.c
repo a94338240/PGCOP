@@ -186,6 +186,17 @@ static int _interface_connect(pg_cop_module_interface_t *intf,
 
 static int _interface_disconnect(pg_cop_module_interface_t *intf)
 {
+  switch (intf->peer->type) {
+  case MODULE_INTERFACE_TYPE_THREAD:
+    break;
+  case MODULE_INTERFACE_TYPE_SOCKET_TCP:
+    close(intf->peer->connection_id);
+    intf->peer->connection_id = -1;
+    break;
+  default:
+    return -1;
+  }
+
   intf->peer = NULL;
   return 0;
 }
@@ -202,6 +213,8 @@ static void *_interface_tracker_cli(void *arg)
   int found = 0;
   int call_type;
 
+  DEBUG_INFO("A new client connected.");
+
   intf_cli = pg_cop_module_interface_new("CALLBACK", 
                                          MODULE_INTERFACE_TYPE_SOCKET_TCP);
   intf_cli->connection_id = sockfd;
@@ -217,10 +230,9 @@ static void *_interface_tracker_cli(void *arg)
           announce->intf->type == MODULE_INTERFACE_TYPE_THREAD) {
         intf_mod = announce->intf;
         if (call_type == MAGIC_START_INVOKE) {
-          if (!_interface_connect(intf_mod, intf_cli))
+          if (!_interface_connect(intf_mod, intf_cli)) {
             found = 1;
-        } else {
-          found = 1;
+          }
         }
         break;
       }
@@ -257,12 +269,15 @@ static void *_interface_tracker(void *arg)
   pthread_t thread;
   pthread_attr_t attr;
   int retval;
+  int port = 12728;
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   bzero((char *)&serv_addr, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = htons(12728);
   serv_addr.sin_addr.s_addr = INADDR_ANY;
+  serv_addr.sin_port = htons(port);
+
+  DEBUG_INFO("Tracker started.");
 
  retry_bind:
   if (bind(sockfd, (struct sockaddr *)&serv_addr,
@@ -363,14 +378,19 @@ pg_cop_module_interface_t *pg_cop_module_interface_connect(const char *name)
   pg_cop_module_interface_announcement_t *announce;
   int found = 0;
   pg_cop_module_interface_t *intf = NULL;
-  intf = pg_cop_module_interface_new(name, MODULE_INTERFACE_TYPE_THREAD);
+  intf = pg_cop_module_interface_new("PEER", MODULE_INTERFACE_TYPE_THREAD);
 
   for (;;) {
     list_for_each_entry(announce, &announced_modules->list_head, 
                         list_head) {
       if (strcmp(announce->intf->mod_name, name) == 0) {
-        if (!_interface_connect(intf, announce->intf))
+        if (strcmp(name, "mod_tester_remote") == 0 && 
+            announce->intf->type != MODULE_INTERFACE_TYPE_SOCKET_TCP)
+          continue;
+        if (!_interface_connect(intf, announce->intf)) {
           found = 1;
+          break;
+        }
       }
     }
     if (found)
@@ -515,13 +535,26 @@ int pg_cop_module_interface_return(pg_cop_module_interface_t *intf, int num, ...
 pg_cop_module_interface_t *pg_cop_module_interface_announce(const char *name,
                                                             pg_cop_module_interface_type_t type)
 {
-  pg_cop_module_interface_announcement_t * announce = 
+  pg_cop_module_interface_announcement_t * announce;
+  pg_cop_module_interface_t *intf;
+
+
+  list_for_each_entry(announce, &announced_modules->list_head,
+                      list_head) {
+    if (strcmp(announce->intf->mod_name, name) == 0 &&
+        announce->intf->type == type) {
+      return announce->intf;
+    }
+  }
+
+  intf = pg_cop_module_interface_new(name, type);
+  announce = 
     (pg_cop_module_interface_announcement_t *)malloc
     (sizeof(pg_cop_module_interface_announcement_t));
-  pg_cop_module_interface_t *intf = pg_cop_module_interface_new(name, type);
-
   announce->intf = intf;
+                      
   list_add_tail(&announce->list_head, &announced_modules->list_head);
+  DEBUG_INFO("Module %s announced.", name);
 
   return intf;
 }
@@ -533,6 +566,8 @@ int pg_cop_module_interface_revoke(pg_cop_module_interface_t *intf)
   list_for_each_entry_safe(announce, announce_tmp,
                            &announced_modules->list_head, list_head) {
     if (announce->intf == intf) {
+      DEBUG_INFO("Module %s revoked with type %d.", announce->intf->mod_name,
+                 announce->intf->type);
       pg_cop_module_interface_destroy(announce->intf);
       list_del(&announce->list_head);
       free(announce);
