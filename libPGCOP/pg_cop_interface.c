@@ -163,11 +163,11 @@ static int _interface_connect(pg_cop_module_interface_t *intf,
       break;
     peer->connection_id = socket(AF_INET, SOCK_STREAM, 0);
     bzero((char *)&remote_addr, sizeof(remote_addr));
-    host_info = gethostbyname("127.0.0.1");
+    host_info = gethostbyname(peer->host);
     memcpy(&remote_addr.sin_addr.s_addr, 
            host_info->h_addr, host_info->h_length);
     remote_addr.sin_family = AF_INET;
-    remote_addr.sin_port = htons(12728);
+    remote_addr.sin_port = htons(peer->port);
   retry:
     if (connect(peer->connection_id, (struct sockaddr *)&remote_addr, 
                 sizeof(remote_addr))) {
@@ -216,7 +216,7 @@ static void *_interface_tracker_cli(void *arg)
   DEBUG_INFO("A new client connected.");
 
   intf_cli = pg_cop_module_interface_new("CALLBACK", 
-                                         MODULE_INTERFACE_TYPE_SOCKET_TCP);
+                                         MODULE_INTERFACE_TYPE_SOCKET_TCP, 0);
   intf_cli->connection_id = sockfd;
 
   while (1) {
@@ -348,16 +348,33 @@ int pg_cop_module_interface_wait(pg_cop_module_interface_t *intf, char **method)
 }
 
 pg_cop_module_interface_t *pg_cop_module_interface_new(const char *name, 
-                                                       pg_cop_module_interface_type_t type)
+                                                       pg_cop_module_interface_type_t type,
+                                                       ...)
 {
   pg_cop_module_interface_t *intf = (pg_cop_module_interface_t *)malloc
     (sizeof(pg_cop_module_interface_t));
+  va_list va;
+
   intf->vstack = pg_cop_vstack_new(0, 8 * 1024 * 1024);
-  intf->mod_name = name;
+  intf->mod_name = strdup(name);
   intf->type = type;
   intf->peer = NULL;
   intf->connection_id = -1;
+  intf->host = NULL;
   sem_init(&intf->recv_sem, 0, 0);
+
+  switch (type) {
+  case MODULE_INTERFACE_TYPE_THREAD:
+    break;
+  case MODULE_INTERFACE_TYPE_SOCKET_TCP:
+    if (strcmp(name, "CALLBACK")) {
+      va_start(va, type);
+      intf->host = strdup(va_arg(va, char *));
+      intf->port = va_arg(va, int);
+      va_end(va);
+    }
+    break;
+  }
 
   return intf;
 }
@@ -367,6 +384,12 @@ int pg_cop_module_interface_destroy(pg_cop_module_interface_t *intf)
   if (intf) {
     pg_cop_vstack_destroy(intf->vstack);
     sem_destroy(&intf->recv_sem);
+    if (intf->host)
+      free(intf->host);
+    intf->host = NULL;
+    if (intf->mod_name)
+      free(intf->mod_name);
+    intf->mod_name = NULL;
     free(intf);
     return 0;
   }
@@ -378,7 +401,8 @@ pg_cop_module_interface_t *pg_cop_module_interface_connect(const char *name)
   pg_cop_module_interface_announcement_t *announce;
   int found = 0;
   pg_cop_module_interface_t *intf = NULL;
-  intf = pg_cop_module_interface_new("PEER", MODULE_INTERFACE_TYPE_THREAD);
+  intf = pg_cop_module_interface_new("PEER", MODULE_INTERFACE_TYPE_THREAD, 
+                                     0);
 
   for (;;) {
     list_for_each_entry(announce, &announced_modules->list_head, 
@@ -463,9 +487,9 @@ int pg_cop_module_interface_invoke(pg_cop_module_interface_t *intf,
         goto out;
       pg_cop_vstack_transfer(vstack, intf->vstack);
     }
-  free(mod_name_from);
-  free(mod_name);
-  pg_cop_vstack_destroy(vstack);
+    free(mod_name_from);
+    free(mod_name);
+    pg_cop_vstack_destroy(vstack);
     break;
   default:
     return -1;
@@ -533,21 +557,30 @@ int pg_cop_module_interface_return(pg_cop_module_interface_t *intf, int num, ...
 }
 
 pg_cop_module_interface_t *pg_cop_module_interface_announce(const char *name,
-                                                            pg_cop_module_interface_type_t type)
+                                                            pg_cop_module_interface_type_t type,
+                                                            ...)
 {
   pg_cop_module_interface_announcement_t * announce;
   pg_cop_module_interface_t *intf;
+  const char *host;
+  int port;
+  va_list va;
 
+  va_start(va, type);
+  host = va_arg(va, char *);
+  port = va_arg(va, int);
 
   list_for_each_entry(announce, &announced_modules->list_head,
                       list_head) {
     if (strcmp(announce->intf->mod_name, name) == 0 &&
-        announce->intf->type == type) {
+        announce->intf->type == type &&
+        strcmp(announce->intf->host, host) == 0 && 
+        announce->intf->port == port) {
       return announce->intf;
     }
   }
 
-  intf = pg_cop_module_interface_new(name, type);
+  intf = pg_cop_module_interface_new(name, type, host, port);
   announce = 
     (pg_cop_module_interface_announcement_t *)malloc
     (sizeof(pg_cop_module_interface_announcement_t));

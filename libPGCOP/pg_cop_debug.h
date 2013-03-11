@@ -19,6 +19,7 @@
 #ifndef PG_COP_DEBUG_H
 #define PG_COP_DEBUG_H
 #include <stdio.h>
+#include <stdlib.h>
 
 #define DEBUG_ERROR(...)              \
   do {                                   \

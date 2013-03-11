@@ -20,6 +20,8 @@
 #include "pg_cop_modules.h"
 #include "pg_cop_config.h"
 #include "pg_cop_interface.h"
+#include "pg_cop_seeds.h"
+
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -97,6 +99,15 @@ static int pg_cop_vstack_transfer_test(const char **name)
   return 0;
 }
 
+static int pg_cop_seeds_load_test(const char **name)
+{
+  *name = __FUNCTION__;
+  assert(pg_cop_init_seeds_table() == 0);
+  assert(pg_cop_load_seeds(0, NULL) == 0);
+
+  return 0;
+}
+
 static int pg_cop_modules_load_test(const char **name)
 {
   *name = __FUNCTION__;
@@ -164,7 +175,8 @@ static int pg_cop_interface_remote_invoke_test(const char **name) {
   char *res;
 
   intf_remote = pg_cop_module_interface_announce("mod_tester_remote", 
-                                                 MODULE_INTERFACE_TYPE_SOCKET_TCP);
+                                                 MODULE_INTERFACE_TYPE_SOCKET_TCP, 
+                                                 "127.0.0.1", 12728);
   // Call twice
   intf_tester = pg_cop_module_interface_connect("mod_tester_remote");
   assert(intf_tester);
@@ -205,11 +217,12 @@ typedef struct {
 } test_case_t;
 
 test_case_t test_cases[] = {
-  {pg_cop_vstack_test, 50},
+  {pg_cop_vstack_test, 1},
   {pg_cop_modules_load_test, 1},
-  {pg_cop_vstack_transfer_test, 50},
-  {pg_cop_interface_invoke_test, 50},
-  {pg_cop_interface_remote_invoke_test, 50},
+  {pg_cop_vstack_transfer_test, 1},
+  {pg_cop_interface_invoke_test, 1},
+  {pg_cop_interface_remote_invoke_test, 1},
+  {pg_cop_seeds_load_test, 1},
   {NULL, 0}
 };
 

@@ -16,41 +16,29 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PG_COP_MODULES_H
-#define PG_COP_MODULES_H
+#ifndef PG_COP_SEEDS_H
+#define PG_COP_SEEDS_H
 
 #include "list.h"
-#include "pg_cop_debug.h"
-#include "pg_cop_util.h"
-#include <pthread.h>
-
-struct _pg_cop_module_t;
+#include "pg_cop_interface.h"
 
 typedef struct {
-  const char *name;
-} pg_cop_module_info_t;
-
-typedef struct {
-  int (*init)(int, char **);
-  void *(*start)(struct _pg_cop_module_t *);
-} pg_cop_module_hooks_t;
-
-typedef struct _pg_cop_module_t {
-  void *dl_handle;
-  pthread_t thread;
-  pthread_attr_t thread_attr;
-  pg_cop_module_info_t *info;
-  pg_cop_module_hooks_t *hooks;
+  pg_cop_module_interface_t *seed_intf;
+  pg_cop_module_interface_t *tracker_intf;
+  char *infohash;
+  char *host;
+  int port;
   struct list_head list_head;
-} pg_cop_module_t;
+} pg_cop_seed_t;
 
-extern pg_cop_module_t *pg_cop_modules_list;
-extern char *pg_cop_modules_path;
+extern pg_cop_seed_t *pg_cop_seeds_list;
+extern char *pg_cop_seeds_path;
 
-int pg_cop_init_modules_table();
-int pg_cop_load_modules(int, char **);
+int pg_cop_init_seeds_table();
+int pg_cop_load_seeds(int, char **);
+pg_cop_seed_t *pg_cop_seed_new(char *infohash,
+                               char *host,
+                               int port);
+int pg_cop_seed_destroy(pg_cop_seed_t *);
 
-int pg_cop_module_init(pg_cop_module_t *, 
-                        int , char **);
-int pg_cop_module_start(pg_cop_module_t *);
-#endif /* PG_COP_MODULES_H */
+#endif /* PG_COP_SEEDS_H */

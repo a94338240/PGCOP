@@ -19,6 +19,7 @@
 #include "pg_cop_config.h"
 #include "pg_cop_modules.h"
 #include "pg_cop_debug.h"
+#include "pg_cop_seeds.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -49,9 +50,17 @@ int pg_cop_read_config()
     if (lua_isstring(L, -1))
       pg_cop_modules_path = strdup(lua_tostring(L, -1));
   }
+  lua_getglobal(L, "pgcop");
+  if (lua_istable(L, -1)) {
+    lua_getfield(L, -1, "seeds_path");
+    if (lua_isstring(L, -1))
+      pg_cop_seeds_path = strdup(lua_tostring(L, -1));
+  }
 
   if (pg_cop_modules_path == NULL)
     pg_cop_modules_path = "/usr/local/pgcop/share/pgcop/modules";
+  if (pg_cop_seeds_path == NULL)
+    pg_cop_seeds_path = "/usr/local/pgcop/share/pgcop/seeds";
 
   lua_close(L);
   return 0;
