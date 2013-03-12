@@ -45,6 +45,7 @@ int pg_cop_load_seeds(int argc, char *argv[])
   char file_ext[20] = {};
   char seed_path[255] = {};
   pg_cop_seed_t *seed = NULL;
+  pg_cop_module_t *module;
   int invres;
   FILE *fp;
 
@@ -78,27 +79,35 @@ int pg_cop_load_seeds(int argc, char *argv[])
 
     // TODO fill structure of seeds.
     seed = pg_cop_seed_new("202cb962ac59075b964b07152d234b70",
-                           "mod_tester_remote",
+                           "mod_tester_service",
                            "127.0.0.1",
                            12728);
 
-    seed->tracker_intf = pg_cop_module_interface_announce("mod_pgcop_tracker", 
-                                                          MODULE_INTERFACE_TYPE_SOCKET_TCP,
-                                                          seed->tracker_host, 
-                                                          seed->tracker_port);
-    if (seed->tracker_intf == NULL)
-      goto out;
+    list_for_each_entry(module, &pg_cop_modules_list->list_head, list_head) {
+      if (strcmp(module->info->name, seed->mod_name) == 0) {
+        DEBUG_INFO("Service in seed %s available on this computer.", 
+                   seed_dir_entry->d_name);
+        seed->tracker_intf = pg_cop_module_interface_announce("mod_pgcop_tracker", 
+                                                              MODULE_INTERFACE_TYPE_SOCKET_TCP,
+                                                              seed->tracker_host, 
+                                                              seed->tracker_port);
+        if (seed->tracker_intf == NULL)
+          goto out;
+        seed->seed_intf = pg_cop_module_interface_connect("mod_pgcop_tracker");
+        if (seed->seed_intf == NULL)
+          goto out;
 
-    seed->seed_intf = pg_cop_module_interface_connect("mod_pgcop_tracker");
-    if (seed->seed_intf == NULL)
-      goto out;
-
-    if (pg_cop_module_interface_invoke(seed->seed_intf, "announce_seed", 2,
-                                       VSTACK_TYPE_STRING, seed->infohash,
-                                       VSTACK_TYPE_I32, tracker_incoming_port))
-      goto out;
-    if (pg_cop_module_interface_pop(seed->seed_intf, VSTACK_TYPE_I32, &invres))
-      goto out;
+        if (pg_cop_module_interface_invoke(seed->seed_intf, "announce_seed", 2,
+                                           VSTACK_TYPE_STRING, seed->infohash,
+                                           VSTACK_TYPE_I32, tracker_incoming_port))
+          goto out;
+        if (pg_cop_module_interface_pop(seed->seed_intf, VSTACK_TYPE_I32, &invres))
+          goto out;
+      }
+      else {
+        DEBUG_INFO("Service in seed %s not available on this computer, we op as a client only", seed_dir_entry->d_name);
+      }
+    }
 
     INIT_LIST_HEAD(&seed->list_head);
     list_add_tail(&seed->list_head, &pg_cop_seeds_list->list_head);
