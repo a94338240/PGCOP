@@ -54,9 +54,9 @@ int main(int argc, char *argv[])
     }
   }
 
-  
   pg_cop_read_config(); 
-  pg_cop_module_interface_tracker_init();
+  pg_cop_module_interface_daemon_init();
+  pg_cop_module_interface_daemon_start();
   pg_cop_init_modules_table();
   pg_cop_load_modules(argc, argv);
 

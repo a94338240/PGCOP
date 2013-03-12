@@ -34,6 +34,7 @@
 #include <netdb.h>
 #include <unistd.h>
 
+int tracker_incoming_port = 0;
 pg_cop_module_interface_announcement_t *announced_modules = NULL;
 
 static int _interface_request_send(pg_cop_module_interface_t *intf,
@@ -269,13 +270,12 @@ static void *_interface_tracker(void *arg)
   pthread_t thread;
   pthread_attr_t attr;
   int retval;
-  int port = 12728;
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   bzero((char *)&serv_addr, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = INADDR_ANY;
-  serv_addr.sin_port = htons(port);
+  serv_addr.sin_port = htons(tracker_incoming_port);
 
   DEBUG_INFO("Tracker started.");
 
@@ -314,15 +314,20 @@ static void *_interface_tracker(void *arg)
   return NULL;
 }
 
-int pg_cop_module_interface_tracker_init()
+int pg_cop_module_interface_daemon_init()
+{
+  announced_modules = (pg_cop_module_interface_announcement_t*)
+    malloc(sizeof(pg_cop_module_interface_announcement_t));
+  INIT_LIST_HEAD(&announced_modules->list_head);
+
+  return 0;
+}
+
+int pg_cop_module_interface_daemon_start()
 {
   int retval;
   pthread_t thread;
   pthread_attr_t attr;
-
-  announced_modules = (pg_cop_module_interface_announcement_t*)
-    malloc(sizeof(pg_cop_module_interface_announcement_t));
-  INIT_LIST_HEAD(&announced_modules->list_head);
 
   retval = pthread_attr_init(&attr);
   if (retval != 0) {
@@ -408,9 +413,6 @@ pg_cop_module_interface_t *pg_cop_module_interface_connect(const char *name)
     list_for_each_entry(announce, &announced_modules->list_head, 
                         list_head) {
       if (strcmp(announce->intf->mod_name, name) == 0) {
-        if (strcmp(name, "mod_tester_remote") == 0 && 
-            announce->intf->type != MODULE_INTERFACE_TYPE_SOCKET_TCP)
-          continue;
         if (!_interface_connect(intf, announce->intf)) {
           found = 1;
           break;
@@ -482,6 +484,7 @@ int pg_cop_module_interface_invoke(pg_cop_module_interface_t *intf,
       if (_interface_request_send(intf,
                                   MAGIC_START_INVOKE) != 0)
         goto out;
+      pg_cop_vstack_clear(intf->vstack);
       if (_interface_request_recv(intf->peer->connection_id, &call_type, 
                                   &vstack, &mod_name, &mod_name_from) != 0)
         goto out;
@@ -543,6 +546,7 @@ int pg_cop_module_interface_return(pg_cop_module_interface_t *intf, int num, ...
                                   MAGIC_START_RETURN) != 0)
         goto out;
     }
+    pg_cop_vstack_clear(intf->vstack);
     break;
   default:
     return -1;

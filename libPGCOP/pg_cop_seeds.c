@@ -19,6 +19,7 @@
 #include "pg_cop_seeds.h"
 #include "pg_cop_debug.h"
 #include "pg_cop_util.h"
+#include "pg_cop_config.h"
 
 #include <string.h>
 #include <dirent.h>
@@ -77,12 +78,14 @@ int pg_cop_load_seeds(int argc, char *argv[])
 
     // TODO fill structure of seeds.
     seed = pg_cop_seed_new("202cb962ac59075b964b07152d234b70",
+                           "mod_tester_remote",
                            "127.0.0.1",
                            12728);
 
     seed->tracker_intf = pg_cop_module_interface_announce("mod_pgcop_tracker", 
-                                                    MODULE_INTERFACE_TYPE_SOCKET_TCP,
-                                                    seed->host, seed->port);
+                                                          MODULE_INTERFACE_TYPE_SOCKET_TCP,
+                                                          seed->tracker_host, 
+                                                          seed->tracker_port);
     if (seed->tracker_intf == NULL)
       goto out;
 
@@ -90,12 +93,14 @@ int pg_cop_load_seeds(int argc, char *argv[])
     if (seed->seed_intf == NULL)
       goto out;
 
-    if (pg_cop_module_interface_invoke(seed->seed_intf, "announce_seed", 1,
-                                       VSTACK_TYPE_STRING, seed->infohash))
+    if (pg_cop_module_interface_invoke(seed->seed_intf, "announce_seed", 2,
+                                       VSTACK_TYPE_STRING, seed->infohash,
+                                       VSTACK_TYPE_I32, tracker_incoming_port))
       goto out;
-    if (pg_cop_module_interface_pop(seed->seed_intf, VSTACK_TYPE_U8, &invres))
+    if (pg_cop_module_interface_pop(seed->seed_intf, VSTACK_TYPE_I32, &invres))
       goto out;
 
+    INIT_LIST_HEAD(&seed->list_head);
     list_add_tail(&seed->list_head, &pg_cop_seeds_list->list_head);
 
     DEBUG_INFO("Seed %s be loaded.",
@@ -113,13 +118,15 @@ int pg_cop_load_seeds(int argc, char *argv[])
 }
 
 pg_cop_seed_t *pg_cop_seed_new(char *infohash,
+                               char *mod_name,
                                char *host,
                                int port)
 {
   pg_cop_seed_t *seed = malloc(sizeof(pg_cop_seed_t));
   seed->infohash = strdup(infohash);
-  seed->host = strdup(host);
-  seed->port = port;
+  seed->mod_name = strdup(mod_name);
+  seed->tracker_host = strdup(host);
+  seed->tracker_port = port;
 
   return seed;
 }
@@ -128,8 +135,10 @@ int pg_cop_seed_destroy(pg_cop_seed_t *seed)
 {
   free(seed->infohash);
   seed->infohash = NULL;
-  free(seed->host);
-  seed->host = NULL;
+  free(seed->tracker_host);
+  seed->tracker_host = NULL;
+  free(seed->mod_name);
+  seed->mod_name = NULL;
   free(seed);
 
   return 0;

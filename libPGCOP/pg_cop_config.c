@@ -56,6 +56,12 @@ int pg_cop_read_config()
     if (lua_isstring(L, -1))
       pg_cop_seeds_path = strdup(lua_tostring(L, -1));
   }
+  lua_getglobal(L, "pgcop");
+  if (lua_istable(L, -1)) {
+    lua_getfield(L, -1, "incoming_port");
+    if (lua_isnumber(L, -1))
+      tracker_incoming_port = lua_tonumber(L, -1);
+  }
 
   if (pg_cop_modules_path == NULL)
     pg_cop_modules_path = "/usr/local/pgcop/share/pgcop/modules";

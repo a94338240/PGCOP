@@ -59,7 +59,8 @@ int pg_cop_module_interface_wait(pg_cop_module_interface_t *, char ** method);
   pg_cop_vstack_pop(intf->vstack, type, __VA_ARGS__)
 #define pg_cop_module_interface_push(intf, type, ...) \
   pg_cop_vstack_push(intf->vstack, type, __VA_ARGS__)
-int pg_cop_module_interface_tracker_init();
+int pg_cop_module_interface_daemon_init();
+int pg_cop_module_interface_daemon_start();
 
 pg_cop_module_interface_t *pg_cop_module_interface_new(const char *name, 
                                                        pg_cop_module_interface_type_t type, ...);

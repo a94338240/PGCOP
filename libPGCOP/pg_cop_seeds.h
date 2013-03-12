@@ -26,8 +26,9 @@ typedef struct {
   pg_cop_module_interface_t *seed_intf;
   pg_cop_module_interface_t *tracker_intf;
   char *infohash;
-  char *host;
-  int port;
+  char *mod_name;
+  char *tracker_host;
+  int tracker_port;
   struct list_head list_head;
 } pg_cop_seed_t;
 
@@ -37,6 +38,7 @@ extern char *pg_cop_seeds_path;
 int pg_cop_init_seeds_table();
 int pg_cop_load_seeds(int, char **);
 pg_cop_seed_t *pg_cop_seed_new(char *infohash,
+                               char *mod_name,
                                char *host,
                                int port);
 int pg_cop_seed_destroy(pg_cop_seed_t *);

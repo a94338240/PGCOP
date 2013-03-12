@@ -46,6 +46,7 @@ typedef struct _pg_cop_module_t {
 
 extern pg_cop_module_t *pg_cop_modules_list;
 extern char *pg_cop_modules_path;
+extern char **pg_cop_ignore_modules;
 
 int pg_cop_init_modules_table();
 int pg_cop_load_modules(int, char **);

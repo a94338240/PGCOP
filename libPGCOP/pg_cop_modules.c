@@ -35,6 +35,7 @@
 pg_cop_module_t *pg_cop_modules_list = NULL;
 
 char *pg_cop_modules_path = NULL;
+char **pg_cop_ignore_modules = NULL;
 
 int pg_cop_init_modules_table()
 {
@@ -56,6 +57,7 @@ int pg_cop_load_modules(int argc, char *argv[])
   void *dl_handle;
   void *module_hooks;
   pg_cop_module_info_t *module_info;
+  int i = 0;
 
   if (!pg_cop_modules_list)
     return -1;
@@ -73,6 +75,15 @@ int pg_cop_load_modules(int argc, char *argv[])
       continue;
     if (strncmp(file_ext, ".so", 3))
       continue;
+    
+    for (i = 0; pg_cop_ignore_modules &&
+           pg_cop_ignore_modules[i]; i++) {
+      if (strcmp(module_dir_entry->d_name, 
+                 pg_cop_ignore_modules[i]) == 0) {
+        DEBUG_INFO("Module %s skipped.", pg_cop_ignore_modules[i]);
+        goto skip;
+      }
+    }
 
     strncpy(module_path, pg_cop_modules_path, sizeof(module_path) - 1);
     strncat(module_path, "/", sizeof(module_path) - 1);
@@ -108,6 +119,7 @@ int pg_cop_load_modules(int argc, char *argv[])
 
     DEBUG_INFO("Module %s be loaded.",
                module_dir_entry->d_name);
+  skip:;
   }
 
   closedir(module_dir);

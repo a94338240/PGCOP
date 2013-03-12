@@ -27,6 +27,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+char *ignore_modules[] = {
+  "mod_tester_remote.so",
+  "mod_pgcop_tracker.so",
+  NULL
+};
+
 static int pg_cop_vstack_test(const char **name)
 {
   pg_cop_vstack_t *vstack, *vstack2;
@@ -113,11 +119,12 @@ static int pg_cop_modules_load_test(const char **name)
   *name = __FUNCTION__;
   pg_cop_module_t *module;
 
-  pg_cop_module_interface_tracker_init();
   assert(pg_cop_read_config() == 0);
+  assert(pg_cop_module_interface_daemon_init() == 0);
+
   assert(pg_cop_init_modules_table() == 0);
   assert(pg_cop_load_modules(0, NULL) == 0);
-  
+
   list_for_each_entry(module, &pg_cop_modules_list->list_head, list_head) {
     assert(pg_cop_module_init(module, 0, NULL) == 0);
     assert(pg_cop_module_start(module) == 0);
@@ -231,6 +238,9 @@ int main()
   int i = 0;
   int j = 0;
   const char *name;
+
+  pg_cop_ignore_modules = ignore_modules;
+
   for (i = 0;; i++) {
     if (test_cases[i].num == 0) {
       printf("All tests done.\n");
