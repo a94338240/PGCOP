@@ -30,3 +30,4 @@ config.status
 *.lo
 libtool
 stamp-*
+*_ag.[ch]

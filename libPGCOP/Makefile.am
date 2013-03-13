@@ -37,7 +37,7 @@ install-data-hook:
 	if [ ! -f /etc/pgcop_conf.lua ]; then \
 		echo "pgcop = {}" > /etc/pgcop_conf.lua ; \
 		echo "pgcop.modules_path = \"$(datadir)/pgcop/modules\"" >> /etc/pgcop_conf.lua ; \
-		echo "pgcop.seeds_path = \"$(datadir)/pgcop/seeds\"" >> /etc/pgcop_conf.lua ; \	
-		echo "pgcop.incoming_port = 12728" >> /etc/pgcop_conf.lua ; \		
+		echo "pgcop.seeds_path = \"$(datadir)/pgcop/seeds\"" >> /etc/pgcop_conf.lua ; \
+		echo "pgcop.incoming_port = 12728" >> /etc/pgcop_conf.lua ; \
 	fi
 	mkdir -p $(datadir)/pgcop/seeds

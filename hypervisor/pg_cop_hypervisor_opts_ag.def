@@ -1,0 +1,15 @@
+AutoGen Definitions options;
+prog-name     = hypervisor;
+prog-title    = "PGCOP Hypervisor";
+long-opts;
+gnu-usage;    /* GNU style preferred to default */
+
+flag = {
+    name      = conf;
+    value     = c;        /* flag style option character */
+    arg-type  = string;   /* option argument indication  */
+    max       = NOLIMIT;  /* occurrence limit (none)     */
+    stack-arg;            /* save opt args in a stack    */
+    descrip   = "PGCOP Lua config file.";
+    doc       = 'Load a lua config file to configure PGCOP hypervisor';
+};

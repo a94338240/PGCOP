@@ -22,35 +22,28 @@
 #include "pg_cop_modules.h"
 #include "pg_cop_interface.h"
 #include "list.h"
+#include "pg_cop_hypervisor_opts_ag.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
-#include <getopt.h>
-
-static struct option long_options[] = {
-  {"help",       no_argument,       0,  'h'},
-  {"conf",       required_argument, 0,  'c'},
-  {0,            0,                 0,   0 }
-};
 
 int main(int argc, char *argv[])
 {
-  int opt = 0;
-  int option_index = 0;
   void *res = NULL;
   pg_cop_module_t *module = NULL;
 
-  while ((opt = getopt_long(argc, argv, "h",
-                            long_options, &option_index)) != -1) {
-    switch (opt) {
-    case 'c':
-      pg_cop_lua_config_file = optarg;
-      break;
-    default:
-      fprintf(stderr, "Hypervisor\n\t--conf Config file.");
-      exit(EXIT_FAILURE);
+  int optct = optionProcess(&hypervisorOptions, argc, argv);
+  argc -= optct;
+  argv += optct;
+
+  if (HAVE_OPT(CONF)) {
+    int filect = STACKCT_OPT(CONF);
+    char** conf_opt = (char **)STACKLST_OPT(CONF);
+    if (filect > 0) {
+      char* config_filename = *conf_opt;
+      pg_cop_lua_config_file = config_filename;
     }
   }
 
