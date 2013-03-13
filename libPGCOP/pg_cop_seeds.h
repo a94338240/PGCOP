@@ -23,13 +23,13 @@
 #include "pg_cop_interface.h"
 
 typedef struct {
-  pg_cop_module_interface_t *seed_intf;
-  pg_cop_module_interface_t *tracker_intf;
-  char *infohash;
-  char *mod_name;
-  char *tracker_host;
-  int tracker_port;
-  struct list_head list_head;
+	pg_cop_module_interface_t *seed_intf;
+	pg_cop_module_interface_t *tracker_intf;
+	char *infohash;
+	char *mod_name;
+	char *tracker_host;
+	int tracker_port;
+	struct list_head list_head;
 } pg_cop_seed_t;
 
 extern pg_cop_seed_t *pg_cop_seeds_list;

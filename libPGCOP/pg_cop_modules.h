@@ -27,21 +27,21 @@
 struct _pg_cop_module_t;
 
 typedef struct {
-  const char *name;
+	const char *name;
 } pg_cop_module_info_t;
 
 typedef struct {
-  int (*init)(int, char **);
-  void *(*start)(struct _pg_cop_module_t *);
+	int (*init)(int, char **);
+	void *(*start)(struct _pg_cop_module_t *);
 } pg_cop_module_hooks_t;
 
 typedef struct _pg_cop_module_t {
-  void *dl_handle;
-  pthread_t thread;
-  pthread_attr_t thread_attr;
-  pg_cop_module_info_t *info;
-  pg_cop_module_hooks_t *hooks;
-  struct list_head list_head;
+	void *dl_handle;
+	pthread_t thread;
+	pthread_attr_t thread_attr;
+	pg_cop_module_info_t *info;
+	pg_cop_module_hooks_t *hooks;
+	struct list_head list_head;
 } pg_cop_module_t;
 
 extern pg_cop_module_t *pg_cop_modules_list;
@@ -51,7 +51,7 @@ extern char **pg_cop_ignore_modules;
 int pg_cop_init_modules_table();
 int pg_cop_load_modules(int, char **);
 
-int pg_cop_module_init(pg_cop_module_t *, 
-                        int , char **);
+int pg_cop_module_init(pg_cop_module_t *,
+                       int , char **);
 int pg_cop_module_start(pg_cop_module_t *);
 #endif /* PG_COP_MODULES_H */

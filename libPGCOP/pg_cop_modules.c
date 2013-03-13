@@ -39,123 +39,124 @@ char **pg_cop_ignore_modules = NULL;
 
 int pg_cop_init_modules_table()
 {
-  pg_cop_modules_list = 
-    (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t)); // INFO No free needed
-  if (!pg_cop_modules_list)
-    return -1;
-  INIT_LIST_HEAD(&pg_cop_modules_list->list_head);
-  return 0;
+	pg_cop_modules_list =
+	    (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t)); // INFO No free needed
+	if (!pg_cop_modules_list)
+		return -1;
+	INIT_LIST_HEAD(&pg_cop_modules_list->list_head);
+	return 0;
 }
 
 int pg_cop_load_modules(int argc, char *argv[])
 {
-  DIR *module_dir;
-  struct dirent *module_dir_entry;
-  char file_ext[20] = {};
-  char module_path[255] = {};
-  pg_cop_module_t *module;
-  void *dl_handle;
-  void *module_hooks;
-  pg_cop_module_info_t *module_info;
-  int i = 0;
+	DIR *module_dir;
+	struct dirent *module_dir_entry;
+	char file_ext[20] = {};
+	char module_path[255] = {};
+	pg_cop_module_t *module;
+	void *dl_handle;
+	void *module_hooks;
+	pg_cop_module_info_t *module_info;
+	int i = 0;
 
-  if (!pg_cop_modules_list)
-    return -1;
+	if (!pg_cop_modules_list)
+		return -1;
 
-  module_dir = opendir(pg_cop_modules_path);
+	module_dir = opendir(pg_cop_modules_path);
 
-  if (!module_dir)
-    DEBUG_CRITICAL("Cannot found module directory.");
+	if (!module_dir)
+		DEBUG_CRITICAL("Cannot found module directory.");
 
-  while ((module_dir_entry = readdir(module_dir))) {
-    if (!module_dir_entry->d_name)
-      continue;
-    if (pg_cop_get_file_extension(module_dir_entry->d_name, 
-                                  file_ext, sizeof(file_ext)) != 0)
-      continue;
-    if (strncmp(file_ext, ".so", 3))
-      continue;
-    
-    for (i = 0; pg_cop_ignore_modules &&
-           pg_cop_ignore_modules[i]; i++) {
-      if (strcmp(module_dir_entry->d_name, 
-                 pg_cop_ignore_modules[i]) == 0) {
-        DEBUG_INFO("Module %s skipped.", pg_cop_ignore_modules[i]);
-        goto skip;
-      }
-    }
+	while ((module_dir_entry = readdir(module_dir))) {
+		if (!module_dir_entry->d_name)
+			continue;
+		if (pg_cop_get_file_extension(module_dir_entry->d_name,
+		                              file_ext, sizeof(file_ext)) != 0)
+			continue;
+		if (strncmp(file_ext, ".so", 3))
+			continue;
 
-    strncpy(module_path, pg_cop_modules_path, sizeof(module_path) - 1);
-    strncat(module_path, "/", sizeof(module_path) - 1);
-    strncat(module_path, module_dir_entry->d_name, sizeof(module_path) - 1);
-    dl_handle = dlopen(module_path, RTLD_LAZY);
+		for (i = 0; pg_cop_ignore_modules &&
+		        pg_cop_ignore_modules[i]; i++) {
+			if (strcmp(module_dir_entry->d_name,
+			           pg_cop_ignore_modules[i]) == 0) {
+				DEBUG_INFO("Module %s skipped.", pg_cop_ignore_modules[i]);
+				goto skip;
+			}
+		}
 
-    if (!dl_handle) {
-      DEBUG_ERROR("Module %s cannot be loaded.", 
-                  module_dir_entry->d_name);
-      continue;
-    }
+		strncpy(module_path, pg_cop_modules_path, sizeof(module_path) - 1);
+		strncat(module_path, "/", sizeof(module_path) - 1);
+		strncat(module_path, module_dir_entry->d_name, sizeof(module_path) - 1);
+		dl_handle = dlopen(module_path, RTLD_LAZY);
 
-    module_info = dlsym(dl_handle, "pg_cop_module_info");
-    if (!module_info) {
-      DEBUG_ERROR("No info symbol found in %s.",
-                  module_dir_entry->d_name);
-      continue;
-    }
+		if (!dl_handle) {
+			DEBUG_ERROR("Module %s cannot be loaded.",
+			            module_dir_entry->d_name);
+			continue;
+		}
 
-    module_hooks = dlsym(dl_handle, "pg_cop_module_hooks");
-    if (!module_hooks) {
-      DEBUG_ERROR("No hooks symbol found in %s.",
-                  module_dir_entry->d_name);
-      continue;
-    }
+		module_info = dlsym(dl_handle, "pg_cop_module_info");
+		if (!module_info) {
+			DEBUG_ERROR("No info symbol found in %s.",
+			            module_dir_entry->d_name);
+			continue;
+		}
 
-    module = (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t)); // FIXME Not freed
-    module->dl_handle = dl_handle;
-    module->info = module_info;
-    module->thread = 0;
-    module->hooks = module_hooks;
-    list_add_tail(&module->list_head, &pg_cop_modules_list->list_head);
+		module_hooks = dlsym(dl_handle, "pg_cop_module_hooks");
+		if (!module_hooks) {
+			DEBUG_ERROR("No hooks symbol found in %s.",
+			            module_dir_entry->d_name);
+			continue;
+		}
 
-    DEBUG_INFO("Module %s be loaded.",
-               module_dir_entry->d_name);
-  skip:;
-  }
+		module = (pg_cop_module_t *)malloc(sizeof(pg_cop_module_t)); // FIXME Not freed
+		module->dl_handle = dl_handle;
+		module->info = module_info;
+		module->thread = 0;
+		module->hooks = module_hooks;
+		list_add_tail(&module->list_head, &pg_cop_modules_list->list_head);
 
-  closedir(module_dir);
-  return 0;
+		DEBUG_INFO("Module %s be loaded.",
+		           module_dir_entry->d_name);
+skip:
+		;
+	}
+
+	closedir(module_dir);
+	return 0;
 }
 
-int pg_cop_module_init(pg_cop_module_t *module, 
+int pg_cop_module_init(pg_cop_module_t *module,
                        int argc, char *argv[])
 {
-  if (module->hooks == NULL ||
-      module->hooks->init == NULL) {
-    return -1;
-  }
-  return module->hooks->init(argc, argv);
+	if (module->hooks == NULL ||
+	        module->hooks->init == NULL) {
+		return -1;
+	}
+	return module->hooks->init(argc, argv);
 }
 
-int pg_cop_module_start(pg_cop_module_t *module) 
+int pg_cop_module_start(pg_cop_module_t *module)
 {
-  int retval = 0;
+	int retval = 0;
 
-  if (module->hooks == NULL ||
-      module->hooks->start == NULL)
-    return -1;
+	if (module->hooks == NULL ||
+	        module->hooks->start == NULL)
+		return -1;
 
-  retval = pthread_attr_init(&module->thread_attr);
-  if (retval != 0) {
-    DEBUG_ERROR("Cannot create thread attributes.");
-    return -1;
-  }
-  
-  if (pthread_create(&module->thread, &module->thread_attr,
-                     (void *(*)(void *))module->hooks->start, module)) {
-    DEBUG_ERROR("Cannot create thread.");
-    return -1;
-  }
+	retval = pthread_attr_init(&module->thread_attr);
+	if (retval != 0) {
+		DEBUG_ERROR("Cannot create thread attributes.");
+		return -1;
+	}
 
-  return 0;
+	if (pthread_create(&module->thread, &module->thread_attr,
+	                   (void *(*)(void *))module->hooks->start, module)) {
+		DEBUG_ERROR("Cannot create thread.");
+		return -1;
+	}
+
+	return 0;
 }
 

@@ -26,33 +26,33 @@
 #define MAGIC_START_RETURN (0xE7383322)
 
 typedef enum {
-  MODULE_INTERFACE_TYPE_THREAD,
-  MODULE_INTERFACE_TYPE_SOCKET_TCP,
+	MODULE_INTERFACE_TYPE_THREAD,
+	MODULE_INTERFACE_TYPE_SOCKET_TCP,
 } pg_cop_module_interface_type_t;
 
 typedef struct _pg_cop_module_interface_t {
-  pg_cop_module_interface_type_t type;
-  pg_cop_vstack_t *vstack;
-  int connection_id;
-  char *host;
-  int port;
-  char *mod_name;
-  sem_t recv_sem;
-  struct _pg_cop_module_interface_t *peer;
+	pg_cop_module_interface_type_t type;
+	pg_cop_vstack_t *vstack;
+	int connection_id;
+	char *host;
+	int port;
+	char *mod_name;
+	sem_t recv_sem;
+	struct _pg_cop_module_interface_t *peer;
 } pg_cop_module_interface_t;
 
 typedef struct {
-  pg_cop_module_interface_t *intf;
-  struct list_head list_head;
+	pg_cop_module_interface_t *intf;
+	struct list_head list_head;
 } pg_cop_module_interface_announcement_t;
 
 pg_cop_module_interface_t *pg_cop_module_interface_announce(const char *name,
-                                                            pg_cop_module_interface_type_t type, ...);
+        pg_cop_module_interface_type_t type, ...);
 pg_cop_module_interface_t *pg_cop_module_interface_connect(const char *);
 int pg_cop_module_interface_disconnect(pg_cop_module_interface_t *);
-int pg_cop_module_interface_invoke(pg_cop_module_interface_t *, const char *, 
+int pg_cop_module_interface_invoke(pg_cop_module_interface_t *, const char *,
                                    int, ...);
-int pg_cop_module_interface_return(pg_cop_module_interface_t *, 
+int pg_cop_module_interface_return(pg_cop_module_interface_t *,
                                    int, ...);
 int pg_cop_module_interface_wait(pg_cop_module_interface_t *, char ** method);
 #define pg_cop_module_interface_pop(intf, type, ...)  \
@@ -62,8 +62,8 @@ int pg_cop_module_interface_wait(pg_cop_module_interface_t *, char ** method);
 int pg_cop_module_interface_daemon_init();
 int pg_cop_module_interface_daemon_start();
 
-pg_cop_module_interface_t *pg_cop_module_interface_new(const char *name, 
-                                                       pg_cop_module_interface_type_t type, ...);
+pg_cop_module_interface_t *pg_cop_module_interface_new(const char *name,
+        pg_cop_module_interface_type_t type, ...);
 int pg_cop_module_interface_destroy(pg_cop_module_interface_t *intf);
 int pg_cop_module_interface_revoke(pg_cop_module_interface_t *intf);
 
