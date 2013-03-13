@@ -40,8 +40,7 @@ int pg_cop_read_config()
 
   if (luaL_loadfilex(L, filename, NULL) || 
       lua_pcall(L, 0, 0, 0)) {
-    DEBUG_ERROR("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
-    return -1;
+    DEBUG_CRITICAL("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
   }
  
   lua_getglobal(L, "pgcop");
