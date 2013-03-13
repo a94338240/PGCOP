@@ -39,27 +39,27 @@ typedef enum {
 	VSTACK_WRONG_TYPE,
 	VSTACK_OVERFLOW,
 	VSTACK_EMPTY,
-	VSTACK_BROKEN
+	VSTACK_BROKEN,
+	VSTACK_ALLOC
 } pg_cop_vstack_state_t;
 
 typedef struct {
 	int id;
 	int size;
 	int top;
-	char data_area[];
+	char *data_area;
 } pg_cop_vstack_t;
 
-pg_cop_vstack_t *pg_cop_vstack_new(int id, int size);
+pg_cop_vstack_t *pg_cop_vstack_new(int, int);
 void pg_cop_vstack_destroy(pg_cop_vstack_t *);
-pg_cop_vstack_state_t pg_cop_vstack_push(pg_cop_vstack_t *vstack, pg_cop_vstack_type_t type, ...);
-pg_cop_vstack_state_t pg_cop_vstack_pop(pg_cop_vstack_t *vstack, pg_cop_vstack_type_t type, ...);
-int pg_cop_vstack_pick_type(pg_cop_vstack_t *vstack, pg_cop_vstack_type_t*);
-pg_cop_vstack_state_t pg_cop_vstack_transfer(pg_cop_vstack_t *s_vstack,
-        pg_cop_vstack_t *d_vstack);
-int pg_cop_vstack_used_bytes(pg_cop_vstack_t *vstack);
-int pg_cop_vstack_has_more(pg_cop_vstack_t *vstack);
-int pg_cop_vstack_clear(pg_cop_vstack_t *vstack);
-void *pg_cop_vstack_dump(pg_cop_vstack_t *vstack);
-int pg_cop_vstack_import(pg_cop_vstack_t *vstack, void *data, int size);
+pg_cop_vstack_state_t pg_cop_vstack_push(pg_cop_vstack_t *, pg_cop_vstack_type_t, ...);
+pg_cop_vstack_state_t pg_cop_vstack_pop(pg_cop_vstack_t *, pg_cop_vstack_type_t, ...);
+int pg_cop_vstack_pick_type(pg_cop_vstack_t *, pg_cop_vstack_type_t*);
+pg_cop_vstack_state_t pg_cop_vstack_transfer(pg_cop_vstack_t *, pg_cop_vstack_t *);
+int pg_cop_vstack_used_bytes(pg_cop_vstack_t *);
+int pg_cop_vstack_has_more(pg_cop_vstack_t *);
+int pg_cop_vstack_clear(pg_cop_vstack_t *);
+void *pg_cop_vstack_dump(pg_cop_vstack_t *);
+int pg_cop_vstack_import(pg_cop_vstack_t *, void *, int);
 
 #endif /* PG_COP_VSTACK_H */

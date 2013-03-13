@@ -29,18 +29,20 @@
 
 const char *pg_cop_lua_config_file = NULL;
 
-
 int pg_cop_read_config()
 {
-	lua_State *L = (lua_State *)luaL_newstate();
-	const char *filename = pg_cop_lua_config_file;
+	lua_State *L = (lua_State *) luaL_newstate();
+	if (!L)
+		goto new_state;
 
+	const char *filename = pg_cop_lua_config_file;
 	if (!filename)
 		filename = "/etc/pgcop_conf.lua";
 
 	if (luaL_loadfilex(L, filename, NULL) ||
 	        lua_pcall(L, 0, 0, 0)) {
 		DEBUG_CRITICAL("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
+		goto load_lua_file;
 	}
 
 	lua_getglobal(L, "pgcop");
@@ -69,190 +71,116 @@ int pg_cop_read_config()
 
 	lua_close(L);
 	return 0;
-}
 
-int pg_cop_get_module_config_strdup(const char *conf_key, char **str)
-{
-	lua_State *L = (lua_State *)luaL_newstate();
-	const char *filename = pg_cop_lua_config_file;
-	char *tmp = strdup(conf_key);
-	char *np = tmp;
-	char *cp;
-	int res = -1;
-
-	if (!filename)
-		filename = "/etc/pgcop_conf.lua";
-
-	if (luaL_loadfilex(L, filename, NULL) ||
-	        lua_pcall(L, 0, 0, 0)) {
-		DEBUG_ERROR("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
-		return -1;
-	}
-
-	lua_getglobal(L, "pgcop");
-	if (!lua_istable(L, -1))
-		goto out;
-	lua_getfield(L, -1, "modules");
-	if (!lua_istable(L, -1))
-		goto out;
-	while ((cp = strsep(&np, "."))) {
-		if (np) {
-			lua_getfield(L, -1, cp);
-			if (!lua_istable(L, -1))
-				goto out;
-		} else {
-			lua_getfield(L, -1, cp);
-			if (!lua_isstring(L, -1))
-				goto out;
-			res = 0;
-			*str = strdup(lua_tostring(L, -1));
-			break;
-		}
-	}
-
-out:
-	if (res)
-		DEBUG_ERROR("Config key %s not be found.", conf_key);
-	if (tmp)
-		free(tmp);
+load_lua_file:
 	lua_close(L);
-	return res;
-}
-
-int pg_cop_get_module_config_number(const char *conf_key, int *num)
-{
-	lua_State *L = (lua_State *)luaL_newstate();
-	const char *filename = pg_cop_lua_config_file;
-	char *tmp = strdup(conf_key);
-	char *np = tmp;
-	char *cp;
-	int res = -1;
-
-	if (!filename)
-		filename = "/etc/pgcop_conf.lua";
-
-	if (luaL_loadfilex(L, filename, NULL) ||
-	        lua_pcall(L, 0, 0, 0)) {
-		DEBUG_ERROR("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
-		return -1;
-	}
-
-	lua_getglobal(L, "pgcop");
-	if (!lua_istable(L, -1))
-		goto out;
-	lua_getfield(L, -1, "modules");
-	if (!lua_istable(L, -1))
-		goto out;
-	while ((cp = strsep(&np, "."))) {
-		if (np) {
-			lua_getfield(L, -1, cp);
-			if (!lua_istable(L, -1))
-				goto out;
-		} else {
-			lua_getfield(L, -1, cp);
-			if (!lua_isnumber(L, -1))
-				goto out;
-			res = 0;
-			*num = lua_tonumber(L, -1);
-			break;
-		}
-	}
-
-out:
-	if (res)
-		DEBUG_ERROR("Config key %s not be found.", conf_key);
-	if (tmp)
-		free(tmp);
-	lua_close(L);
-	return res;
+	L = NULL;
+new_state:
+	return -1;
 }
 
 int pg_cop_get_config_strdup(const char *conf_key, char **str)
 {
-	lua_State *L = (lua_State *)luaL_newstate();
 	const char *filename = pg_cop_lua_config_file;
-	char *tmp = strdup(conf_key);
-	char *np = tmp;
-	char *cp;
-	int res = -1;
 
 	if (!filename)
 		filename = "/etc/pgcop_conf.lua";
 
+	lua_State *L = (lua_State *) luaL_newstate();
+	if (!L)
+		goto new_state;
+
 	if (luaL_loadfilex(L, filename, NULL) ||
 	        lua_pcall(L, 0, 0, 0)) {
 		DEBUG_ERROR("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
-		return -1;
+		goto load_lua_file;
 	}
 
 	lua_getglobal(L, "pgcop");
 	if (!lua_istable(L, -1))
-		goto out;
+		goto check_global_type;
+
+	char *tmp = strdup(conf_key);
+	char *np = tmp;
+	char *cp;
 	while ((cp = strsep(&np, "."))) {
 		if (np) {
 			lua_getfield(L, -1, cp);
 			if (!lua_istable(L, -1))
-				goto out;
+				goto check_type;
 		} else {
 			lua_getfield(L, -1, cp);
 			if (!lua_isstring(L, -1))
-				goto out;
-			res = 0;
+				goto check_type;
 			*str = strdup(lua_tostring(L, -1));
 			break;
 		}
 	}
 
-out:
-	if (res)
-		DEBUG_ERROR("Config key %s not be found.", conf_key);
-	if (tmp)
-		free(tmp);
+	free(tmp);
+	return 0;
+
+check_type:
+	DEBUG_ERROR("Config key %s not be found.", conf_key);
+	free(tmp);
+check_global_type:
+load_lua_file:
 	lua_close(L);
-	return res;
+	L = NULL;
+new_state:
+	return -1;
 }
 
 int pg_cop_get_config_number(const char *conf_key, int *num)
 {
-	lua_State *L = (lua_State *)luaL_newstate();
 	const char *filename = pg_cop_lua_config_file;
-	char *tmp = strdup(conf_key);
-	char *np = tmp;
-	char *cp;
-	int res = -1;
 
 	if (!filename)
 		filename = "/etc/pgcop_conf.lua";
 
+	lua_State *L = (lua_State *) luaL_newstate();
+	if (!L)
+		goto new_state;
+
 	if (luaL_loadfilex(L, filename, NULL) ||
 	        lua_pcall(L, 0, 0, 0)) {
 		DEBUG_ERROR("Cannot load configs from lua. error=%s", lua_tostring(L, -1));
-		return -1;
+		goto load_lua_file;
 	}
 
 	lua_getglobal(L, "pgcop");
 	if (!lua_istable(L, -1))
-		goto out;
+		goto check_global_type;
+
+	char *tmp = strdup(conf_key);
+	char *np = tmp;
+	char *cp;
 	while ((cp = strsep(&np, "."))) {
 		if (np) {
 			lua_getfield(L, -1, cp);
 			if (!lua_istable(L, -1))
-				goto out;
+				goto check_type;
 		} else {
 			lua_getfield(L, -1, cp);
 			if (!lua_isnumber(L, -1))
-				goto out;
-			res = 0;
+				goto check_type;
 			*num = lua_tonumber(L, -1);
 			break;
 		}
 	}
 
-out:
-	if (res)
-		DEBUG_ERROR("Config key %s not be found.", conf_key);
-	if (tmp)
-		free(tmp);
+	free(tmp);
+	tmp = NULL;
+	return 0;
+
+check_type:
+	DEBUG_ERROR("Config key %s not be found.", conf_key);
+	free(tmp);
+	tmp = NULL;
+check_global_type:
+load_lua_file:
 	lua_close(L);
-	return res;
+	L = NULL;
+new_state:
+	return -1;
 }

@@ -32,7 +32,7 @@ typedef struct {
 
 typedef struct {
 	int (*init)(int, char **);
-	void *(*start)(struct _pg_cop_module_t *);
+	void * (*start)(struct _pg_cop_module_t *);
 } pg_cop_module_hooks_t;
 
 typedef struct _pg_cop_module_t {
@@ -54,4 +54,6 @@ int pg_cop_load_modules(int, char **);
 int pg_cop_module_init(pg_cop_module_t *,
                        int , char **);
 int pg_cop_module_start(pg_cop_module_t *);
+int pg_cop_module_destroy(pg_cop_module_t *);
+int pg_cop_module_stop(pg_cop_module_t *);
 #endif /* PG_COP_MODULES_H */

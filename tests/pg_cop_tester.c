@@ -43,8 +43,8 @@ static int pg_cop_vstack_test(const char **name)
 
 	*name = __FUNCTION__;
 
-	vstack = pg_cop_vstack_new(0, 8*1024*1024);
-	vstack2 = pg_cop_vstack_new(0, 8*1024*1024);
+	vstack = pg_cop_vstack_new(0, 8 * 1024 * 1024);
+	vstack2 = pg_cop_vstack_new(0, 8 * 1024 * 1024);
 	assert(vstack);
 	assert(pg_cop_vstack_push(vstack, VSTACK_TYPE_U8, 0xF2) == 0);
 	assert(pg_cop_vstack_pop(vstack, VSTACK_TYPE_U8, &u8) == 0);
@@ -89,9 +89,9 @@ static int pg_cop_vstack_transfer_test(const char **name)
 
 	*name = __FUNCTION__;
 
-	vstack = pg_cop_vstack_new(0, 8*1024*1024);
+	vstack = pg_cop_vstack_new(0, 8 * 1024 * 1024);
 	assert(vstack);
-	vstack2= pg_cop_vstack_new(0, 8*1024*1024);
+	vstack2 = pg_cop_vstack_new(0, 8 * 1024 * 1024);
 	assert(vstack2);
 	assert(pg_cop_vstack_push(vstack, VSTACK_TYPE_U8, 0xF2) == 0);
 	assert(pg_cop_vstack_push(vstack, VSTACK_TYPE_U8, 0x72) == 0);

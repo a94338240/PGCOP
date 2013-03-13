@@ -31,35 +31,53 @@
 
 int main(int argc, char *argv[])
 {
-	void *res = NULL;
-	pg_cop_module_t *module = NULL;
-
 	int optct = optionProcess(&hypervisorOptions, argc, argv);
 	argc -= optct;
 	argv += optct;
 
 	if (HAVE_OPT(CONF)) {
 		int filect = STACKCT_OPT(CONF);
-		char** conf_opt = (char **)STACKLST_OPT(CONF);
+		char** conf_opt = (char **) STACKLST_OPT(CONF);
 		if (filect > 0) {
 			char* config_filename = *conf_opt;
 			pg_cop_lua_config_file = config_filename;
 		}
 	}
 
-	pg_cop_read_config();
-	pg_cop_module_interface_daemon_init();
-	pg_cop_module_interface_daemon_start();
-	pg_cop_init_modules_table();
-	pg_cop_load_modules(argc, argv);
+	if (pg_cop_read_config())
+		goto read_config;
+
+	if (pg_cop_module_interface_daemon_init())
+		goto daemon_init;
+
+	if (pg_cop_module_interface_daemon_start())
+		goto daemon_start;
+
+	if (pg_cop_init_modules_table())
+		goto modules_init;
+
+	if (pg_cop_load_modules(argc, argv))
+		goto load_modules;
 
 	DEBUG_INFO("Hypervisor started.");
 
-	list_for_each_entry(module, &pg_cop_modules_list->list_head, list_head) {
-		pg_cop_module_init(module, argc, argv);
-		pg_cop_module_start(module);
+	pg_cop_module_t *module, *module_tmp;
+	list_for_each_entry_safe(module, module_tmp,
+	                         &pg_cop_modules_list->list_head, list_head) {
+		if (pg_cop_module_init(module, argc, argv))
+			goto module_init;
+		if (pg_cop_module_start(module))
+			goto module_start;
+		continue;
+
+module_start:
+		list_del(&module->list_head);
+		pg_cop_module_destroy(module);
+module_init:
+		;
 	}
 
+	void *res = NULL;
 	list_for_each_entry(module, &pg_cop_modules_list->list_head, list_head) {
 		pthread_join(module->thread, &res);
 		if (res)
@@ -69,4 +87,11 @@ int main(int argc, char *argv[])
 	DEBUG_INFO("Hypervisor stopped.");
 
 	return 0;
+
+load_modules:
+modules_init:
+daemon_start:
+daemon_init:
+read_config:
+	return -1;
 }

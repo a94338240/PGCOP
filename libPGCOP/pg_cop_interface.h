@@ -46,25 +46,27 @@ typedef struct {
 	struct list_head list_head;
 } pg_cop_module_interface_announcement_t;
 
-pg_cop_module_interface_t *pg_cop_module_interface_announce(const char *name,
-        pg_cop_module_interface_type_t type, ...);
+pg_cop_module_interface_t *pg_cop_module_interface_announce(const char *,
+        pg_cop_module_interface_type_t, ...);
 pg_cop_module_interface_t *pg_cop_module_interface_connect(const char *);
 int pg_cop_module_interface_disconnect(pg_cop_module_interface_t *);
 int pg_cop_module_interface_invoke(pg_cop_module_interface_t *, const char *,
                                    int, ...);
 int pg_cop_module_interface_return(pg_cop_module_interface_t *,
                                    int, ...);
-int pg_cop_module_interface_wait(pg_cop_module_interface_t *, char ** method);
+int pg_cop_module_interface_wait(pg_cop_module_interface_t *, char **);
 #define pg_cop_module_interface_pop(intf, type, ...)  \
   pg_cop_vstack_pop(intf->vstack, type, __VA_ARGS__)
 #define pg_cop_module_interface_push(intf, type, ...) \
   pg_cop_vstack_push(intf->vstack, type, __VA_ARGS__)
+#define pg_cop_module_interface_has_more(intf) \
+  pg_cop_vstack_has_more(intf->vstack)
 int pg_cop_module_interface_daemon_init();
 int pg_cop_module_interface_daemon_start();
 
-pg_cop_module_interface_t *pg_cop_module_interface_new(const char *name,
-        pg_cop_module_interface_type_t type, ...);
-int pg_cop_module_interface_destroy(pg_cop_module_interface_t *intf);
-int pg_cop_module_interface_revoke(pg_cop_module_interface_t *intf);
+pg_cop_module_interface_t *pg_cop_module_interface_new(const char *,
+        pg_cop_module_interface_type_t, ...);
+int pg_cop_module_interface_destroy(pg_cop_module_interface_t *);
+int pg_cop_module_interface_revoke(pg_cop_module_interface_t *);
 
 #endif /* PG_COP_INTERFACE_H */

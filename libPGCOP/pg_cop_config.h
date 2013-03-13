@@ -23,9 +23,9 @@ extern const char *pg_cop_lua_config_file;
 extern int tracker_incoming_port;
 
 int pg_cop_read_config();
-int pg_cop_get_module_config_number(const char *conf_key, int *num);
-int pg_cop_get_module_config_strdup(const char *conf_key, char **str);
-int pg_cop_get_config_number(const char *conf_key, int *num);
-int pg_cop_get_config_strdup(const char *conf_key, char **str);
+int pg_cop_get_module_config_number(const char *, int *);
+int pg_cop_get_module_config_strdup(const char *, char **);
+int pg_cop_get_config_number(const char *, int *);
+int pg_cop_get_config_strdup(const char *, char **);
 
 #endif /* PG_COP_CONFIG_H */

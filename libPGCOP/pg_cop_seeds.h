@@ -23,12 +23,17 @@
 #include "pg_cop_interface.h"
 
 typedef struct {
-	pg_cop_module_interface_t *seed_intf;
-	pg_cop_module_interface_t *tracker_intf;
+	pg_cop_module_interface_t *intf;
+	char *host;
+	int port;
+	struct list_head list_head;
+} pg_cop_tracker_info_t;
+
+typedef struct {
+	pg_cop_module_interface_t *intf;
 	char *infohash;
 	char *mod_name;
-	char *tracker_host;
-	int tracker_port;
+	pg_cop_tracker_info_t *tracker_info_list;
 	struct list_head list_head;
 } pg_cop_seed_t;
 
@@ -37,10 +42,13 @@ extern char *pg_cop_seeds_path;
 
 int pg_cop_init_seeds_table();
 int pg_cop_load_seeds(int, char **);
-pg_cop_seed_t *pg_cop_seed_new(char *infohash,
-                               char *mod_name,
-                               char *host,
-                               int port);
+pg_cop_seed_t *pg_cop_seed_new(char *,
+                               char *,
+                               pg_cop_tracker_info_t *);
 int pg_cop_seed_destroy(pg_cop_seed_t *);
+int pg_cop_seed_announce(pg_cop_seed_t *);
+pg_cop_tracker_info_t *pg_cop_tracker_info_new(char *,
+        int);
+int pg_cop_tracker_info_destroy(pg_cop_tracker_info_t *);
 
 #endif /* PG_COP_SEEDS_H */
