@@ -247,7 +247,7 @@ static void *_interface_tracker_cli(void *arg)
 	DEBUG_INFO("A new client connected.");
 
 	pg_cop_module_interface_t *intf_cli = pg_cop_module_interface_new("CALLBACK",
-	                                      MODULE_INTERFACE_TYPE_SOCKET_TCP, 0);
+	                                      MODULE_INTERFACE_TYPE_SOCKET_TCP, "CALLBACK", 0);
 	intf_cli->connection_id = * ((int *) arg);
 
 	while (1) {
@@ -444,19 +444,17 @@ pg_cop_module_interface_t *pg_cop_module_interface_new(const char *name,
 	if (!intf)
 		goto intf_alloc;
 
+	va_list va;
 	switch (type) {
 	case MODULE_INTERFACE_TYPE_THREAD:
 		intf->host = NULL;
 		intf->port = 0;
 		break;
 	case MODULE_INTERFACE_TYPE_SOCKET_TCP:
-		if (strcmp(name, "CALLBACK")) {
-			va_list va;
-			va_start(va, type);
-			intf->host = strdup(va_arg(va, char *));
-			intf->port = va_arg(va, int);
-			va_end(va);
-		}
+		va_start(va, type);
+		intf->host = strdup(va_arg(va, char *));
+		intf->port = va_arg(va, int);
+		va_end(va);
 		break;
 	default:
 		goto check_type;
