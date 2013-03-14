@@ -630,8 +630,10 @@ check_args:
 
 int pg_cop_module_interface_return(pg_cop_module_interface_t *intf, int num, ...)
 {
-	if (intf == NULL || intf->peer == NULL || num < 0)
+	if (intf == NULL || intf->peer == NULL || num < 0) {
+		DEBUG_ERROR("No interface.");
 		goto check_args;
+	}
 
 	va_list va;
 	va_start(va, num);
@@ -640,8 +642,9 @@ int pg_cop_module_interface_return(pg_cop_module_interface_t *intf, int num, ...
 		switch (type) {
 		case VSTACK_TYPE_DATASIZE:
 			if (pg_cop_vstack_push(intf->vstack, type, va_arg(va, void*),
-			                       va_arg(va, void*)) != 0)
+			                       va_arg(va, void*)) != 0) {
 				goto push_datas;
+			}
 			break;
 		case VSTACK_TYPE_STRING:
 			if (pg_cop_vstack_push(intf->vstack, type, va_arg(va, void*)) != 0)

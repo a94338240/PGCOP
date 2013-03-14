@@ -46,6 +46,7 @@ void pg_cop_vstack_destroy(pg_cop_vstack_t *vstack)
 		goto no_data;
 
 	free(vstack->data_area);
+	vstack->data_area = NULL;
 
 no_data:
 	free(vstack);

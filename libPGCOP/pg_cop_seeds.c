@@ -252,15 +252,21 @@ int pg_cop_seed_announce(pg_cop_seed_t *seed)
 {
 	if (pg_cop_module_interface_invoke(seed->intf, "announce_seed", 2,
 	                                   VSTACK_TYPE_STRING, seed->infohash,
-	                                   VSTACK_TYPE_I32, tracker_incoming_port))
+	                                   VSTACK_TYPE_I32, tracker_incoming_port)) {
+		DEBUG_ERROR("Fail to invoke announce_seed method.");
 		goto announce_invoke_cont;
+	}
 
 	int invres;
-	if (pg_cop_module_interface_pop(seed->intf, VSTACK_TYPE_I32, &invres))
+	if (pg_cop_module_interface_pop(seed->intf, VSTACK_TYPE_I32, &invres)) {
+		DEBUG_ERROR("Announce failed, invalid return.");
 		goto announce_return_cont;
+	}
 
-	if (invres)
+	if (invres) {
+		DEBUG_ERROR("Tracker return -1.");
 		goto remote_return;
+	}
 	return 0;
 
 remote_return:
@@ -280,6 +286,7 @@ int pg_cop_seed_revoke(pg_cop_seed_t *seed)
 	if (pg_cop_module_interface_pop(seed->intf, VSTACK_TYPE_I32, &invres))
 		goto announce_return_cont;
 
+	DEBUG_INFO("Revoke seed %s", seed->infohash);
 	return 0;
 
 announce_return_cont:
@@ -294,15 +301,10 @@ int pg_cop_seed_get_announced_peers(pg_cop_seed_t *seed)
 		goto get_peers_invoke;
 
 	int found = 0;
-	int invres = 0;
-	if (pg_cop_module_interface_pop(seed->intf, VSTACK_TYPE_I32, &invres))
-		goto pop_invres;
-	if (invres)
-		goto invres_check;
-
 	while (pg_cop_module_interface_has_more(seed->intf)) {
 		char *peer_host;
 		int peer_port;
+		found = 1;
 		if (pg_cop_module_interface_pop(seed->intf, VSTACK_TYPE_STRING, &peer_host))
 			goto get_peers_return_host_cont;
 		if (pg_cop_module_interface_pop(seed->intf, VSTACK_TYPE_I32, &peer_port))
@@ -316,7 +318,8 @@ int pg_cop_seed_get_announced_peers(pg_cop_seed_t *seed)
 get_peers_return_port_cont:
 		free(peer_host);
 get_peers_return_host_cont:
-		;
+		found = 0;
+		break;
 	}
 
 	if (!found)
@@ -325,8 +328,6 @@ get_peers_return_host_cont:
 	return 0;
 
 find_peers:
-invres_check:
-pop_invres:
 get_peers_invoke:
 	return -1;
 }
