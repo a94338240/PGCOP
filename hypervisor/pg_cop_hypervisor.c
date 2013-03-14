@@ -31,7 +31,6 @@
 #include <assert.h>
 
 char *ignore_modules[] = {
-	"mod_tester_service.so",
 	NULL
 };
 
@@ -67,12 +66,6 @@ int main(int argc, char *argv[])
 	if (pg_cop_load_modules(argc, argv))
 		goto load_modules;
 
-	if (pg_cop_init_seeds_table())
-		goto init_seeds;
-
-	if (pg_cop_load_seeds(argc, argv))
-		goto load_seeds;
-
 	DEBUG_INFO("Hypervisor started.");
 
 	pg_cop_module_t *module, *module_tmp;
@@ -90,6 +83,12 @@ module_start:
 module_init:
 		;
 	}
+
+	if (pg_cop_init_seeds_table())
+		goto init_seeds;
+
+	if (pg_cop_load_seeds(argc, argv))
+		goto load_seeds;
 
 	void *res = NULL;
 	list_for_each_entry(module, &pg_cop_modules_list->list_head, list_head) {

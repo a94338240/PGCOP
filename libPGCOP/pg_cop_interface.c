@@ -726,7 +726,7 @@ pg_cop_module_interface_t *pg_cop_module_interface_announce(const char *name,
 	announce->intf = intf;
 
 	list_add_tail(&announce->list_head, &announced_modules->list_head);
-	DEBUG_INFO("Module %s announced.", name);
+	DEBUG_INFO("Module %s announced type %d.", name, type);
 
 	return intf;
 
