@@ -30,6 +30,7 @@
 char *ignore_modules[] = {
 	"mod_tester_remote.so",
 	"mod_pgcop_tracker.so",
+	"mod_tester_service.so",
 	NULL
 };
 
@@ -109,7 +110,19 @@ static int pg_cop_seeds_load_test(const char **name)
 {
 	*name = __FUNCTION__;
 	assert(pg_cop_init_seeds_table() == 0);
+	pg_cop_seeds_path = "./";
 	assert(pg_cop_load_seeds(0, NULL) == 0);
+
+	void *res;
+
+	pg_cop_module_interface_t *intf_tester = pg_cop_module_interface_connect("mod_tester_service");
+	assert(intf_tester);
+	assert(pg_cop_module_interface_invoke(intf_tester, "ping", 1,
+	                                      VSTACK_TYPE_STRING, "TEST MESSAGE") == 0);
+	assert(pg_cop_module_interface_pop(intf_tester, VSTACK_TYPE_STRING, &res) == 0);
+	assert(strcmp(res, "pong TEST MESSAGE") == 0);
+	free(res);
+	assert(pg_cop_module_interface_disconnect(intf_tester) == 0);
 
 	return 0;
 }

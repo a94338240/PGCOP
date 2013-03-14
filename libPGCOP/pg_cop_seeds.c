@@ -112,6 +112,7 @@ int pg_cop_load_seeds(int argc, char *argv[])
 				DEBUG_INFO("Service in seed %s available on this computer.", seed_dir_entry->d_name);
 			}
 		}
+		DEBUG_INFO("Get peers of %s", seed->mod_name);
 		if (pg_cop_seed_get_announced_peers(seed)) {
 			DEBUG_ERROR("Cannot get peers");
 			goto get_announced_peers;

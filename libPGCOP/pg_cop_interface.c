@@ -273,6 +273,8 @@ static void *_interface_tracker_cli(void *arg)
 					intf_mod = announce->intf;
 					if (!_interface_connect(intf_mod, intf_cli)) {
 						found = 1;
+					} else {
+						DEBUG_INFO("Cannot connect to peer, skiped.");
 					}
 				}
 				break;

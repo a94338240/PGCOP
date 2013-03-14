@@ -21,6 +21,7 @@
 #include "pg_cop_config.h"
 #include "pg_cop_modules.h"
 #include "pg_cop_interface.h"
+#include "pg_cop_seeds.h"
 #include "list.h"
 #include "pg_cop_hypervisor_opts_ag.h"
 
@@ -28,6 +29,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
+
+char *ignore_modules[] = {
+	"mod_tester_service.so",
+	NULL
+};
 
 int main(int argc, char *argv[])
 {
@@ -44,6 +50,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	pg_cop_ignore_modules = ignore_modules;
+
 	if (pg_cop_read_config())
 		goto read_config;
 
@@ -58,6 +66,12 @@ int main(int argc, char *argv[])
 
 	if (pg_cop_load_modules(argc, argv))
 		goto load_modules;
+
+	if (pg_cop_init_seeds_table())
+		goto init_seeds;
+
+	if (pg_cop_load_seeds(argc, argv))
+		goto load_seeds;
 
 	DEBUG_INFO("Hypervisor started.");
 
@@ -88,6 +102,8 @@ module_init:
 
 	return 0;
 
+load_seeds:
+init_seeds:
 load_modules:
 modules_init:
 daemon_start:
