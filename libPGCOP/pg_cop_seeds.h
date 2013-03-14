@@ -50,5 +50,11 @@ int pg_cop_seed_announce(pg_cop_seed_t *);
 pg_cop_tracker_info_t *pg_cop_tracker_info_new(char *,
         int);
 int pg_cop_tracker_info_destroy(pg_cop_tracker_info_t *);
+int pg_cop_seed_connect_tracker(pg_cop_seed_t *);
+int pg_cop_tracker_info_list_destroy(pg_cop_tracker_info_t *);
+int pg_cop_seed_announce(pg_cop_seed_t *seed);
+int pg_cop_seed_get_announced_peers(pg_cop_seed_t *seed);
+int pg_cop_seed_disconnect_tracker(pg_cop_seed_t *seed);
+int pg_cop_seed_revoke(pg_cop_seed_t *seed);
 
 #endif /* PG_COP_SEEDS_H */

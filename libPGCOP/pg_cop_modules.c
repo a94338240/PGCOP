@@ -124,8 +124,7 @@ int pg_cop_load_modules(int argc, char *argv[])
 		module->hooks = module_hooks;
 		list_add_tail(&module->list_head, &pg_cop_modules_list->list_head);
 
-		DEBUG_INFO("Module %s be loaded.",
-		           module_dir_entry->d_name);
+		DEBUG_INFO("Module %s be loaded.", module->info->name);
 		continue;
 
 module_alloc_cont:
@@ -140,6 +139,7 @@ skip:
 check_if_module_file_cont:
 get_file_extension_cont:
 check_d_name_cont:
+		DEBUG_INFO("Error occured what loading module %s", module_dir_entry->d_name);
 		continue;
 	}
 
@@ -168,6 +168,9 @@ int pg_cop_module_destroy(pg_cop_module_t *module)
 {
 	if (!module)
 		goto check_args;
+
+	DEBUG_INFO("Destroying module %s", module->info->name);
+
 	pg_cop_module_stop(module);
 	dlclose(module->dl_handle);
 	pthread_attr_destroy(&module->thread_attr);

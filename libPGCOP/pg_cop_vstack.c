@@ -245,7 +245,9 @@ pg_cop_vstack_state_t pg_cop_vstack_transfer(pg_cop_vstack_t *s_vstack,
 	return VSTACK_OK;
 
 push_err:
-	free(sdata);
+	if (type == VSTACK_TYPE_STRING ||
+	        type == VSTACK_TYPE_DATASIZE)
+		free(sdata);
 pop_err:
 	return -VSTACK_BROKEN;
 }
@@ -304,7 +306,7 @@ int pg_cop_vstack_clear(pg_cop_vstack_t * vstack)
 {
 	if (vstack->data_area)
 		free(vstack->data_area);
-  vstack->data_area = NULL;
+	vstack->data_area = NULL;
 	return vstack->top = 0;
 }
 

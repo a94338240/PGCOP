@@ -307,6 +307,7 @@ request_recv:
 	}
 
 	intf_cli->connection_id = -1;
+	pg_cop_module_interface_destroy(intf_cli);
 	DEBUG_INFO("Client disconnected.");
 	pthread_exit(0);
 	return NULL;
