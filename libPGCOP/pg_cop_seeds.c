@@ -159,6 +159,7 @@ pg_cop_seed_t *pg_cop_seed_new(char *infohash,
 	seed->mod_name = strdup(mod_name);
 	seed->tracker_info_list = tracker_info_list;
 	seed->intf = NULL;
+	seed->ann_intf = NULL;
 
 	return seed;
 }
@@ -170,6 +171,7 @@ int pg_cop_seed_destroy(pg_cop_seed_t *seed)
 	free(seed->mod_name);
 	seed->mod_name = NULL;
 	seed->intf = NULL;
+	seed->ann_intf = NULL;
 	free(seed);
 
 	return 0;
@@ -312,15 +314,25 @@ int pg_cop_seed_get_announced_peers(pg_cop_seed_t *seed)
 
 		// TODO announce remote peers.
 		DEBUG_INFO("INFOHASH=%s, peer=%s:%d", seed->infohash, peer_host, peer_port);
-		free(peer_host);
+		// FIXME interface saving...
+		seed->ann_intf = pg_cop_module_interface_announce(seed->mod_name, MODULE_INTERFACE_TYPE_SOCKET_TCP,
+		                 peer_host, peer_port);
+		if (!seed->intf)
+			goto announce_intf;
 
-		continue;
+		free(peer_host);
+		break;
+
+announce_intf:
 get_peers_return_port_cont:
 		free(peer_host);
 get_peers_return_host_cont:
+		pg_cop_module_interface_clear(seed->intf);
 		found = 0;
-		break;
+		continue;
 	}
+
+	pg_cop_module_interface_clear(seed->intf);
 
 	if (!found)
 		goto find_peers;
@@ -328,6 +340,7 @@ get_peers_return_host_cont:
 	return 0;
 
 find_peers:
+	pg_cop_module_interface_clear(seed->intf);
 get_peers_invoke:
 	return -1;
 }

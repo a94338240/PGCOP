@@ -31,6 +31,7 @@ typedef struct {
 
 typedef struct {
 	pg_cop_module_interface_t *intf;
+	pg_cop_module_interface_t *ann_intf;
 	char *infohash;
 	char *mod_name;
 	pg_cop_tracker_info_t *tracker_info_list;

@@ -61,6 +61,8 @@ int pg_cop_module_interface_wait(pg_cop_module_interface_t *, char **);
   pg_cop_vstack_push(intf->vstack, type, __VA_ARGS__)
 #define pg_cop_module_interface_has_more(intf) \
   pg_cop_vstack_has_more(intf->vstack)
+#define pg_cop_module_interface_clear(intf) \
+  pg_cop_vstack_clear(intf->vstack)
 int pg_cop_module_interface_daemon_init();
 int pg_cop_module_interface_daemon_start();
 
