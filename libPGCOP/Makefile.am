@@ -16,22 +16,24 @@
 
 lib_LTLIBRARIES = libPGCOP.la
 libPGCOP_la_SOURCES = pg_cop_util.c \
-		                  pg_cop_util.h \
-				              pg_cop_modules.c \
+                      pg_cop_util.h \
+                      pg_cop_modules.c \
                       pg_cop_modules.h \
-				              pg_cop_interface.c \
+                      pg_cop_interface.c \
                       pg_cop_interface.h \
                       pg_cop_debug.h \
-				              pg_cop_config.h \
-	   	                pg_cop_config.c \
-				              pg_cop_vstack.h \
-	   	                pg_cop_vstack.c \
-				              pg_cop_seeds.h \
-	   	                pg_cop_seeds.c \
-											list.h
+                      pg_cop_config.h \
+                      pg_cop_config.c \
+                      pg_cop_vstack.h \
+                      pg_cop_vstack.c \
+                      pg_cop_seeds.h \
+                      pg_cop_seeds.c \
+                      pg_cop_seed_file_parser.c \
+                      pg_cop_seed_file_parser.h \
+                      list.h
 
 libPGCOP_la_CFLAGS = $(PGCOP_DEPS_CFLAGS)
-libPGCOP_la_LDFLAGS = $(PGCOP_DEPS_LIBS) -lpthread -ldl
+libPGCOP_la_LDFLAGS = $(PGCOP_DEPS_LIBS) -lpthread -ldl -lcrypto
 
 install-data-hook:
 	if [ ! -f /etc/pgcop_conf.lua ]; then \

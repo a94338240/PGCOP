@@ -23,6 +23,7 @@ AC_CONFIG_SRCDIR([hypervisor/pg_cop_hypervisor.c])
 AC_CONFIG_SRCDIR([libPGCOP/pg_cop_modules.c])
 AC_CONFIG_SRCDIR([modules/pg_cop_mod_socket.c])
 AC_CONFIG_SRCDIR([tests/pg_cop_tester.c])
+AC_CONFIG_SRCDIR([tools/pg_cop_seed_tool.c])
 AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -62,7 +63,8 @@ AC_CONFIG_FILES([Makefile
                  libPGCOP/Makefile
                  modules/Makefile
                  hypervisor/Makefile
-                 tests/Makefile])
+                 tests/Makefile
+				 tools/Makefile])
 
 AC_OUTPUT
 

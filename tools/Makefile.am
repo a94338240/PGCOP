@@ -14,12 +14,8 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-bin_PROGRAMS = pg-cop-hypervisor
-pg_cop_hypervisor_SOURCES = pg_cop_hypervisor.c \
-                            pg_cop_hypervisor.h \
-                            pg_cop_hypervisor_opts_ag.h \
-                            pg_cop_hypervisor_opts_ag.c
-pg_cop_hypervisor_LDADD = ../libPGCOP/libPGCOP.la
-pg_cop_hypervisor_LDFLAGS = -lopts
-pg_cop_hypervisor_CFLAGS = -I ../libPGCOP
+noinst_PROGRAMS = seed_tool
+seed_tool_SOURCES = pg_cop_seed_tool.c
 
+seed_tool_CFLAGS = -I ../libPGCOP
+seed_tool_LDADD = ../libPGCOP/libPGCOP.la 
