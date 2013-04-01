@@ -20,11 +20,13 @@
 #ifndef PG_COP_SEED_FILE_PARSER_H
 #define PG_COP_SEED_FILE_PARSER_H
 #include "list.h"
-
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 struct pg_cop_seed_file_tracker_info {
 	char tracker_type;
-	unsigned int address;
+	struct in_addr address;
 	unsigned short port;
 };
 

@@ -319,7 +319,6 @@ static int _get_tracker_list(void* seed_buf, struct pg_cop_seed_file_tracker_inf
 		new_node->info.tracker_type = track_arr[i].tracker_type;
 		new_node->info.address = track_arr[i].address;
 		new_node->info.port = track_arr[i].port;
-		//DEBUG_INFO("[mod_seed_file] type = %d, address=%d.%d.%d.%d, port=%d", new_node->info.tracker_type, (new_node->info.address >> 24), (new_node->info.address >> 16) & 0xFF, (new_node->info.address >> 8) & 0xFF, new_node->info.address & 0xFF, new_node->info.port);
 		list_add_tail(&new_node->list_head, &l->list_head);
 	}
 	return 0;

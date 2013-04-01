@@ -20,9 +20,13 @@
 #include "pg_cop_debug.h"
 #include "pg_cop_util.h"
 #include "pg_cop_config.h"
+#include "pg_cop_seed_file_parser.h"
 
 #include <string.h>
 #include <dirent.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 pg_cop_seed_t *pg_cop_seeds_list = NULL;
 
@@ -78,24 +82,37 @@ int pg_cop_load_seeds(int argc, char *argv[])
 			goto seed_open_cont;
 		}
 
-		// TODO fill structure of seeds.
 		pg_cop_tracker_info_t *tracker_info_head = malloc(sizeof(pg_cop_tracker_info_t));
 		if (!tracker_info_head)
 			goto tracker_info_head_cont;
 		INIT_LIST_HEAD(&tracker_info_head->list_head);
 
-		pg_cop_tracker_info_t *tracker_info = pg_cop_tracker_info_new("127.0.0.1", 12728);
-		if (!tracker_info)
-			goto alloc_tracker_info;
-		INIT_LIST_HEAD(&tracker_info->list_head);
+		char *module_name;
+		char *hash;
+		struct pg_cop_seed_file_tracker_info_list tracker_list;
+		struct pg_cop_seed_file_func_info_list func_list;
+		pg_cop_seed_file_parser_all_info(seed_path, &module_name,
+		                                 &hash, &tracker_list, &func_list);
 
-		list_add_tail(&tracker_info->list_head,
-		              &tracker_info_head->list_head);
+		struct pg_cop_seed_file_tracker_info_list *l;
+		list_for_each_entry(l, &tracker_list.list_head, list_head) {
+			pg_cop_tracker_info_t *tracker_info = pg_cop_tracker_info_new(inet_ntoa(l->info.address),
+			                                      l->info.port);
+			if (!tracker_info)
+				goto alloc_tracker_info;
 
-		pg_cop_seed_t *seed = pg_cop_seed_new("202cb962ac59075b964b07152d234b70",
-		                                      "mod_tester_service", tracker_info_head);
+			INIT_LIST_HEAD(&tracker_info->list_head);
+
+			list_add_tail(&tracker_info->list_head,
+			              &tracker_info_head->list_head);
+		}
+
+		pg_cop_seed_t *seed = pg_cop_seed_new(hash, module_name, tracker_info_head);
 		if (!seed)
 			goto new_seed_cont;
+
+		free(module_name);
+		free(hash);
 
 		if (pg_cop_seed_connect_tracker(seed))
 			goto connect_tracker_cont;
@@ -132,6 +149,8 @@ seed_announce:
 connect_tracker_cont:
 		pg_cop_seed_destroy(seed);
 new_seed_cont:
+		free(hash);
+		free(module_name);
 alloc_tracker_info:
 		pg_cop_tracker_info_list_destroy(tracker_info_head);
 tracker_info_head_cont:

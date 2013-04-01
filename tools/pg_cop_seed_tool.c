@@ -37,9 +37,27 @@ enum _state_txt {
 	en_note_mult,
 };
 
-const char* g_output_folder = 0;
-char* g_d_name = 0;
+const char* g_output_folder = NULL;
+char* g_d_name = NULL;
 
+/*
+ *┌───────────────────────────────────────────┐
+ *│            Seed info                      │
+ *├───────┬───────────────────────────────────┤
+ *│ Hash  │ cd6c5e902a7e251fc12c09d6844fedf7  │
+ *├───────┼───────────────────────────────────┤
+ *│ Modu  │ mod_service                       │
+ *├───────┼─────┬─────────────────────────────┤
+ *│       │Type │ Address                     │
+ *│ Track ├─────┼─────────────────────────────┤
+ *│       │ 0   │ 10.1.3.117:1080             │
+ *│       │ 0   │ 10.1.1.1:1090               │
+ *├───────┼─────┴─────────────────────────────┤
+ *│ Func  │ ping                              |
+ *│       │ get_four_number                   │
+ *┕───────┴───────────────────────────────────┘
+ *
+ */
 static int _debug_seed(const char* path)
 {
 	char* hash;
@@ -47,8 +65,8 @@ static int _debug_seed(const char* path)
 	struct pg_cop_seed_file_func_info_list func_h;
 	char* module_name = 0;
 	char fmtbuf[32] = {0};
-        int tmpl = 0;
-        int i = 0;
+	int tmpl = 0;
+	int i = 0;
 
 	struct pg_cop_seed_file_tracker_info_list* it = 0;
 	struct pg_cop_seed_file_func_info_list* itl = 0;
@@ -58,11 +76,11 @@ static int _debug_seed(const char* path)
 		return -1;
 	}
 	printf("┌───────────────────────────────────────────┐\n");
-	printf("│               seed info                   │\n");
+	printf("│               Seed info                   │\n");
 	printf("├───────┬───────────────────────────────────┤\n");
-	printf("│ hash  │ %s  │\n", hash);
+	printf("│ Hash  │ %s  │\n", hash);
 	printf("├───────┼───────────────────────────────────┤\n");
-	printf("│ modu  │ %s", module_name);
+	printf("│ Modu  │ %s", module_name);
 	tmpl = strlen(module_name);
 	if (tmpl <= 34) {
 		for (i = 0; i < 34 - tmpl; ++i) printf(" ");
@@ -72,30 +90,12 @@ static int _debug_seed(const char* path)
 
 
 	printf("├───────┼─────┬─────────────────────────────┤\n");
-	printf("│       │type │      ip:port                │\n");
-	printf("│ track ├─────┼─────────────────────────────┤\n");
+	printf("│       │Type │      Address                │\n");
+	printf("│ Track ├─────┼─────────────────────────────┤\n");
 
-	/*
-	 *┌───────────────────────────────────────────┐
-	 *│               seed info                   │
-	 *├───────┬───────────────────────────────────┤
-	 *│ hash  │ cd6c5e902a7e251fc12c09d6844fedf7  │
-	 *├───────┼───────────────────────────────────┤
-	 *│ modu  │ mod_service                       │
-	 *├───────┼─────┬─────────────────────────────┤
-	 *│       │type │ ip:port                     │
-	 *│ track ├─────┼─────────────────────────────┤
-	 *│       │ 0   │ 10.1.3.117:1080             │
-	 *│       │ 0   │ 10.1.1.1:1090               │
-	 *├───────┼─────┴─────────────────────────────┤
-	 *│ func  │ ping                              │
-	 *│       │ get_four_number                   │
-	 *┕───────┴───────────────────────────────────┘
-	 *
-	 * */
 	list_for_each_entry(it, &track_h.list_head, list_head) {
 		memset(fmtbuf, 0, sizeof(fmtbuf));
-		sprintf(fmtbuf, "%d.%d.%d.%d:%d", (it->info.address >> 24), (it->info.address >> 16) & 0xFF, (it->info.address >> 8) & 0xFF, it->info.address & 0xFF, it->info.port);
+		sprintf(fmtbuf, "%s:%d", inet_ntoa(it->info.address), it->info.port);
 		tmpl = strlen(fmtbuf);
 		printf("│       │ %d   │ %s", it->info.tracker_type, fmtbuf);
 		for (i = 0; i < 28 - tmpl; ++i) printf(" ");
@@ -109,7 +109,7 @@ static int _debug_seed(const char* path)
 		static int flg = 0;
 		if (0 == flg) {
 			flg = 1;
-			printf("│ func  │ ");
+			printf("│ Func  │ ");
 		} else {
 			printf("│       │ ");
 		}
@@ -181,12 +181,14 @@ static int _match_parttern(char* s)
 
 	pattern = "([0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}:[0-9]{1,5})\\s+";
 	while (0 == _get_sub_str(dummy, pattern, &p_trck[i], &endoff)) {
-		printf("tracker=%s\n", p_trck[i]);
+		printf("Tracker=%s\n", p_trck[i]);
 		new_track = (struct pg_cop_seed_file_tracker_info_list*)malloc(sizeof(struct pg_cop_seed_file_tracker_info_list));
 		memset(new_track, 0, sizeof(struct pg_cop_seed_file_tracker_info_list));
 		new_track->info.tracker_type = 0;
 		sscanf(p_trck[i], "%d.%d.%d.%d:%d", &a1, &a2, &a3, &a4, &port);
-		new_track->info.address = (a1 << 24) | (a2 << 16) | (a3 << 8) | (a4);
+		char addr_array[32] = {0};
+		sprintf(addr_array, "%d.%d.%d.%d", a1, a2, a3, a4);
+		inet_aton(addr_array, &new_track->info.address);
 		new_track->info.port = port;
 		list_add_tail(&new_track->list_head, &t0.list_head);
 		dummy += endoff;
@@ -195,16 +197,15 @@ static int _match_parttern(char* s)
 	pattern = "(@METHODS:)";
 	if (0 != _get_sub_str(s, pattern, 0, &endoff)) return -1;
 	dummy = s + endoff;
-	printf("============func list============\n");
+	printf("Functions: ");
 	while ((tmp = strsep(&dummy, " ")) != NULL) {
 		if (*tmp != '\0') {
 			struct pg_cop_seed_file_func_info_list* new_f = (struct pg_cop_seed_file_func_info_list*)malloc(sizeof(struct pg_cop_seed_file_func_info_list));
 			new_f->name = tmp;
 			list_add_tail(&new_f->list_head, &f0.list_head);
-			printf("%s\t", tmp);
+			printf("\t%s\n", tmp);
 		}
 	}
-	printf("\n============func list============\n");
 	int l = strlen(g_output_folder) + strlen(g_d_name) + 5;
 	osf = (char*)malloc(l);
 	memset(osf, 0, l);
@@ -301,7 +302,7 @@ static int _generate(const char* path)
 		g_d_name = module_dir_entry->d_name;
 		if (pg_cop_get_file_extension(module_dir_entry->d_name,
 		                              file_ext, sizeof(file_ext)) != 0) {
-		  DEBUG_INFO("Error occured when loading module %s", module_dir_entry->d_name);
+			DEBUG_INFO("Error occured when loading module %s", module_dir_entry->d_name);
 			goto get_file_extension_cont;
 		}
 
@@ -329,14 +330,6 @@ skip:
 check_modules_dir:
 	return -1;
 }
-
-enum opt_mode {
-	en_opt_g,
-	en_opt_d,
-	en_opt_help,
-	en_opt_version,
-	en_opt_null,
-};
 
 int main(int argc, char** argv)
 {
@@ -375,6 +368,8 @@ int main(int argc, char** argv)
 			DEBUG_ERROR("You need to specify a valid path for output.");
 			goto opt_get_output;
 		}
+	} else {
+		g_output_folder = "./seed_output";
 	}
 
 	_generate(path);
