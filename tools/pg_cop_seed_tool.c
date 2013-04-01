@@ -47,6 +47,8 @@ static int _debug_seed(const char* path)
 	struct pg_cop_seed_file_func_info_list func_h;
 	char* module_name = 0;
 	char fmtbuf[32] = {0};
+        int tmpl = 0;
+        int i = 0;
 
 	struct pg_cop_seed_file_tracker_info_list* it = 0;
 	struct pg_cop_seed_file_func_info_list* itl = 0;
@@ -55,36 +57,71 @@ static int _debug_seed(const char* path)
 		DEBUG_ERROR("Cannot parse seed info from %s.", path);
 		return -1;
 	}
-	printf("\nHash = %s\n", hash);
-	printf("Module = %s\n\n", module_name);
+	printf("┌───────────────────────────────────────────┐\n");
+	printf("│               seed info                   │\n");
+	printf("├───────┬───────────────────────────────────┤\n");
+	printf("│ hash  │ %s  │\n", hash);
+	printf("├───────┼───────────────────────────────────┤\n");
+	printf("│ modu  │ %s", module_name);
+	tmpl = strlen(module_name);
+	if (tmpl <= 34) {
+		for (i = 0; i < 34 - tmpl; ++i) printf(" ");
+		printf("│");
+	}
+	printf("\n");
 
-	printf("Trackers list:\n");
-	printf("┌────┬────────────────────────┐\n");
-	printf("│type│        ip:port         │\n");
-	printf("├────┼────────────────────────┤\n");
 
-	/*┌────┬────────────────────────┐
-	 *│type│        ip:port         │
-	 *├────┼────────────────────────┤
-	 *│ 0  │ 100.100.255.252:65535  │
-	 *├────┼────────────────────────┤
-	 *│ 0  │ 100.100.255.252:65535  │
-	 *┕────┴────────────────────────┘
+	printf("├───────┼─────┬─────────────────────────────┤\n");
+	printf("│       │type │      ip:port                │\n");
+	printf("│ track ├─────┼─────────────────────────────┤\n");
+
+	/*
+	 *┌───────────────────────────────────────────┐
+	 *│               seed info                   │
+	 *├───────┬───────────────────────────────────┤
+	 *│ hash  │ cd6c5e902a7e251fc12c09d6844fedf7  │
+	 *├───────┼───────────────────────────────────┤
+	 *│ modu  │ mod_service                       │
+	 *├───────┼─────┬─────────────────────────────┤
+	 *│       │type │ ip:port                     │
+	 *│ track ├─────┼─────────────────────────────┤
+	 *│       │ 0   │ 10.1.3.117:1080             │
+	 *│       │ 0   │ 10.1.1.1:1090               │
+	 *├───────┼─────┴─────────────────────────────┤
+	 *│ func  │ ping                              │
+	 *│       │ get_four_number                   │
+	 *┕───────┴───────────────────────────────────┘
+	 *
 	 * */
 	list_for_each_entry(it, &track_h.list_head, list_head) {
-		int i = 0;
 		memset(fmtbuf, 0, sizeof(fmtbuf));
 		sprintf(fmtbuf, "%d.%d.%d.%d:%d", (it->info.address >> 24), (it->info.address >> 16) & 0xFF, (it->info.address >> 8) & 0xFF, it->info.address & 0xFF, it->info.port);
-		printf("│ %d  │ %s", it->info.tracker_type, fmtbuf);
-		for (i = 0; i < 23 - strlen(fmtbuf); ++i) printf(" ");
+		tmpl = strlen(fmtbuf);
+		printf("│       │ %d   │ %s", it->info.tracker_type, fmtbuf);
+		for (i = 0; i < 28 - tmpl; ++i) printf(" ");
 		printf("│\n");
 	}
-	printf("┕────┴────────────────────────┘\n");
+	printf("├───────┼─────┴─────────────────────────────┤\n");
 
-	printf("\nMethods:\n");
+
 	list_for_each_entry(itl, &func_h.list_head, list_head) {
-		printf("%s\n", itl->name);
+		tmpl = strlen(itl->name);
+		static int flg = 0;
+		if (0 == flg) {
+			flg = 1;
+			printf("│ func  │ ");
+		} else {
+			printf("│       │ ");
+		}
+		printf("%s", itl->name);
+		tmpl = strlen(itl->name);
+		if (tmpl <= 34) {
+			for (i = 0; i < 34 - tmpl; ++i) printf(" ");
+			printf("│");
+		}
+		printf("\n");
 	}
+	printf("┕───────┴───────────────────────────────────┘\n");
 
 	if (0 != pg_cop_seed_file_parser_release_buf(&module_name, &hash, &track_h, &func_h)) {
 		DEBUG_ERROR("release buff error");
@@ -93,6 +130,7 @@ static int _debug_seed(const char* path)
 	return 0;
 }
 
+//specially only match one sub string
 static int _get_sub_str(char* s, char* pattern, char** pout, int* end_offset)
 {
 	regmatch_t m[8];
@@ -210,13 +248,12 @@ static int _g_single_file(char* filename)
 			case en_note:
 				if ('*' == c) st = en_note_mult;
 				else {
-					if ('\n' == c) c = ' ';
+					if (('\n' == c) || ('\t' == c)) c = ' ';
 					if (idx < sizeof(buff) - 1) buff[idx++] = c;
 					else {
-						DEBUG_ERROR("Buffer overflow!");
+						DEBUG_INFO("Buffer overflow!");
 						memset(buff, 0, sizeof(buff));
 						idx = 0;
-						continue;
 					}
 				}
 				break;
@@ -229,6 +266,7 @@ static int _g_single_file(char* filename)
 					memset(buff, 0, sizeof(buff));
 					st = en_ready;
 				} else {
+					if ('\t' == c) c = ' ';
 					buff[idx++] = c;
 					st = en_note;
 				}
