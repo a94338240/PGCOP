@@ -1,0 +1,29 @@
+AutoGen Definitions options;
+prog-name     = tools;
+prog-title    = "PGCOP Seed tools";
+long-opts;
+gnu-usage;    /* GNU style preferred to default */
+
+flag = {
+    name      = input;
+    value     = i;        /* flag style option character */
+    arg-type  = string;   /* option argument indication  */
+    max       = NOLIMIT;  /* occurrence limit (none)     */
+    descrip   = "Directory of modules source, for generation seeds.";
+};
+
+flag = {
+    name      = output;
+    value     = o;        /* flag style option character */
+    arg-type  = string;   /* option argument indication  */
+    max       = NOLIMIT;  /* occurrence limit (none)     */
+    descrip   = "Directory for output seed files.";
+};
+
+flag = {
+    name      = view;
+    value     = l;        /* flag style option character */
+    arg-type  = string;   /* option argument indication  */
+    max       = NOLIMIT;  /* occurrence limit (none)     */
+    descrip   = "Seed file for detail.";
+};

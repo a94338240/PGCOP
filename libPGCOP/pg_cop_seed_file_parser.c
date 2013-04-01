@@ -363,7 +363,7 @@ int _get_func_list(void* seed_buf, struct pg_cop_seed_file_func_info_list* listh
 }
 
 
-int pg_cop_seed_file_parser_all_info(char* file_name,
+int pg_cop_seed_file_parser_all_info(const char* file_name,
                                      char** module_name,
                                      char** hash,
                                      struct pg_cop_seed_file_tracker_info_list* track_h,

@@ -20,7 +20,7 @@
 #include "pg_cop_debug.h"
 #include "pg_cop_seed_file_parser.h"
 #include "pg_cop_util.h"
-#include "pg_cop_seed_file_parser.h"
+#include "pg_cop_seed_tool_opts_ag.h"
 
 #include <dirent.h>
 #include <string.h>
@@ -37,25 +37,10 @@ enum _state_txt {
 	en_note_mult,
 };
 
-char* g_output_folder = 0;
+const char* g_output_folder = 0;
 char* g_d_name = 0;
 
-
-static void _showhelp()
-{
-	printf("pg_seedtool [OPTION]\n");
-	printf("example:\n");
-	printf("    pg_seedtool -g ../modules/\n");
-	printf("    pg_seedtool -g ../modules/ -o /home/mxw/Documents/\n");
-	printf("    pg_seedtool -d ./pg_cop_mod_tester.seed\n");
-
-	printf("\nDESCRIPTION\n");
-	printf("-g: generate seed file\n");
-	printf("-o: directory of output seed file\n");
-	printf("-d: dump seed file info\n\n");
-}
-
-static int _debug_seed(char* path)
+static int _debug_seed(const char* path)
 {
 	char* hash;
 	struct pg_cop_seed_file_tracker_info_list track_h;
@@ -67,13 +52,13 @@ static int _debug_seed(char* path)
 	struct pg_cop_seed_file_func_info_list* itl = 0;
 
 	if (0 != pg_cop_seed_file_parser_all_info(path, &module_name, &hash, &track_h, &func_h)) {
-		DEBUG_ERROR("err when parser %s", path);
+		DEBUG_ERROR("Cannot parse seed info from %s.", path);
 		return -1;
 	}
-	printf("\nhash=%s\n", hash);
-	printf("module name = %s\n\n", module_name);
+	printf("\nHash = %s\n", hash);
+	printf("Module = %s\n\n", module_name);
 
-	printf("tracker list:\n");
+	printf("Trackers list:\n");
 	printf("┌────┬────────────────────────┐\n");
 	printf("│type│        ip:port         │\n");
 	printf("├────┼────────────────────────┤\n");
@@ -96,7 +81,7 @@ static int _debug_seed(char* path)
 	}
 	printf("┕────┴────────────────────────┘\n");
 
-	printf("\nfunction list:\n");
+	printf("\nMethods:\n");
 	list_for_each_entry(itl, &func_h.list_head, list_head) {
 		printf("%s\n", itl->name);
 	}
@@ -108,7 +93,6 @@ static int _debug_seed(char* path)
 	return 0;
 }
 
-//specially only match one sub string
 static int _get_sub_str(char* s, char* pattern, char** pout, int* end_offset)
 {
 	regmatch_t m[8];
@@ -117,7 +101,7 @@ static int _get_sub_str(char* s, char* pattern, char** pout, int* end_offset)
 
 	memset(m, 0, sizeof(m));
 	if (0 != regcomp(&reg, pattern, REG_EXTENDED | REG_NEWLINE)) {
-		DEBUG_ERROR("can not compile reg:%s", pattern);
+		DEBUG_ERROR("Error occured when initialize...");
 		return -1;
 	}
 
@@ -188,13 +172,13 @@ static int _match_parttern(char* s)
 	memset(osf, 0, l);
 	sprintf(osf, "%s%s%s", g_output_folder, "/", g_d_name);
 	sprintf(osf + l - 5, "%s", "seed");
-	printf("output seed file name:%s\n", osf);
+	printf("Output:%s\n", osf);
 	if (0 != pg_cop_seed_file_create(md_name, osf, &t0, &f0)) {
-		DEBUG_ERROR("Err when g");
+		DEBUG_ERROR("Error occured when create seed file.");
 		free(osf);
 		return -1;
 	} else {
-		DEBUG_INFO("seed file generate ok");
+		DEBUG_INFO("Seed file generated successfully.");
 	}
 	free(osf);
 	return 0;
@@ -210,7 +194,7 @@ static int _g_single_file(char* filename)
 	char buff[2048] = {0};
 
 	if (NULL == f) {
-		DEBUG_ERROR("can not open file:%s", filename);
+		DEBUG_ERROR("File %s cannot be open.", filename);
 		return -1;
 	}
 
@@ -229,7 +213,7 @@ static int _g_single_file(char* filename)
 					if ('\n' == c) c = ' ';
 					if (idx < sizeof(buff) - 1) buff[idx++] = c;
 					else {
-						DEBUG_ERROR("buff over flow!");
+						DEBUG_ERROR("Buffer overflow!");
 						memset(buff, 0, sizeof(buff));
 						idx = 0;
 						continue;
@@ -258,7 +242,7 @@ static int _g_single_file(char* filename)
 	return -1;
 }
 
-static int _generate(char* path)
+static int _generate(const char* path)
 {
 	struct dirent *module_dir_entry;
 	char module_path[255] = {};
@@ -271,15 +255,17 @@ static int _generate(char* path)
 
 	while ((module_dir_entry = readdir(module_dir))) {
 		if (!module_dir_entry->d_name) {
-			DEBUG_ERROR("when get file name");
+			DEBUG_ERROR("Cannot open eth input directory.");
 			continue;
 		}
 
 		char file_ext[20] = {};
 		g_d_name = module_dir_entry->d_name;
 		if (pg_cop_get_file_extension(module_dir_entry->d_name,
-		                              file_ext, sizeof(file_ext)) != 0)
+		                              file_ext, sizeof(file_ext)) != 0) {
+		  DEBUG_INFO("Error occured when loading module %s", module_dir_entry->d_name);
 			goto get_file_extension_cont;
+		}
 
 		if (0 != strncmp(file_ext, ".c", 3))
 			goto skip;
@@ -288,14 +274,13 @@ static int _generate(char* path)
 		strncat(module_path, "/", sizeof(module_path) - 1);
 		strncat(module_path, module_dir_entry->d_name, sizeof(module_path) - 1);
 		printf("\n\n");
-		DEBUG_INFO("file=%s, in process", module_path);
+		DEBUG_INFO("File=%s, in progress...", module_path);
 		if (0 != _g_single_file(module_path)) {
-			DEBUG_ERROR("error occured in \'%s\', maybe seed note isn't correct", module_path);
+			DEBUG_ERROR("Error occured in \'%s\', invalid seed declaration comments found.", module_path);
 		}
 		continue;
 
 get_file_extension_cont:
-		DEBUG_INFO("Error occured what loading module %s", module_dir_entry->d_name);
 skip:
 		continue;
 	}
@@ -317,77 +302,50 @@ enum opt_mode {
 
 int main(int argc, char** argv)
 {
-	enum opt_mode mode = en_opt_null;
-	int ch = 0;
-	char* path = 0;
-	struct option long_options[] = {
-		{ "debug", 1, NULL, 'd' },
-		{ "generator", 1, NULL, 'g' },
-		{ "file", 1, NULL, 'o' },
-		{ 0, 0, 0, 0}
-	};
-	char* short_options = "d:g:o:hv";
+	int optct = optionProcess(&toolsOptions, argc, argv);
+	argc -= optct;
+	argv += optct;
 
-	while ((ch = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
-		switch (ch) {
-		case 'd':
-			mode = en_opt_d;
-			path = optarg;
-			break;
-		case 'g':
-			mode = en_opt_g;
-			path = optarg;
-			break;
-		case 'o':
-			g_output_folder = optarg;
-			break;
-		case 'h':
-			mode = en_opt_help;
-			break;
-		case 'v':
-			mode = en_opt_version;
-			break;
-		default:
-			printf("option error sample as: pg_seedtool -g /home/module/\n");
-			printf("                    or  pg_seedtool -d /home/trac.seed\n");
-			exit(-1);
+	if ((!HAVE_OPT(INPUT) || !HAVE_OPT(OUTPUT)) && !HAVE_OPT(VIEW)) {
+		DEBUG_ERROR("You need to specify an input and an output, or view in option.");
+		goto check_opts;
+	}
+
+	const char *path = NULL;
+	if (HAVE_OPT(VIEW)) {
+		path = OPT_ARG(VIEW);
+		if (!path) {
+			DEBUG_ERROR("You need to specify a valid path for input.");
+			goto opt_get_input;
+		}
+
+		_debug_seed(path);
+		goto view_seed;
+	}
+
+	if (HAVE_OPT(INPUT)) {
+		path = OPT_ARG(INPUT);
+		if (!path) {
+			DEBUG_ERROR("You need to specify a valid path for input.");
+			goto opt_get_input;
 		}
 	}
 
-	switch (mode) {
-	case en_opt_g:
-		if (NULL == g_output_folder) {
-			g_output_folder = ".";
-			DEBUG_INFO("not specified output folder, use default as current dir: .");
+	if (HAVE_OPT(OUTPUT)) {
+		g_output_folder = OPT_ARG(OUTPUT);
+		if (!g_output_folder) {
+			DEBUG_ERROR("You need to specify a valid path for output.");
+			goto opt_get_output;
 		}
-		if (NULL != path) {
-			if (0 != _generate(path)) goto er_func_process;
-		} else {
-			printf("error: need valid path option\n");
-			return -1;
-		}
-		break;
-	case en_opt_d:
-		if (_debug_seed(path)) {
-			DEBUG_ERROR("error ocured");
-			return -1;
-		}
-		break;
-	case en_opt_help:
-		_showhelp();
-		break;
-	case en_opt_version:
-		printf("pg_cop_seed_file_tool v0.7\n");
-		printf("Written by steve Ma\n");
-		break;
-	default:
-		DEBUG_ERROR("need a operator option\n");
-		return -1;
 	}
+
+	_generate(path);
+
+view_seed:
 	return 0;
 
-er_func_process:
-	printf("ERROR:process exit\n");
-	free(path);
+opt_get_output:
+opt_get_input:
+check_opts:
 	return -1;
 }

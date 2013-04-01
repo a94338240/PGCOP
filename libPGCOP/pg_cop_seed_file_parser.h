@@ -62,7 +62,7 @@ int pg_cop_seed_file_create(
     struct pg_cop_seed_file_tracker_info_list* tracker,
     struct pg_cop_seed_file_func_info_list* func);
 
-int pg_cop_seed_file_parser_all_info(char* file_name,
+int pg_cop_seed_file_parser_all_info(const char* file_name,
                                      char** module_name,
                                      char** hash,
                                      struct pg_cop_seed_file_tracker_info_list* track_h,

@@ -1,7 +1,9 @@
 *.diff
 *.o
+*.seed
 compile
 pg-cop-hypervisor
+seed_tool
 pg-cop-tester
 *.out
 *.orig
