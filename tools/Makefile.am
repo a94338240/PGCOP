@@ -16,8 +16,9 @@
 
 noinst_PROGRAMS = seed_tool
 seed_tool_SOURCES = pg_cop_seed_tool.c \
-					pg_cop_seed_tool_opts_ag.c
+                    pg_cop_seed_tool_opts_ag.c \
+                    pg_cop_seed_tool_opts_ag.h
 
-seed_tool_CFLAGS = -I ../libPGCOP
+seed_tool_CFLAGS = -I $(srcdir)/../libPGCOP
 seed_tool_LDADD = ../libPGCOP/libPGCOP.la 
 seed_tool_LDFLAGS = -lopts

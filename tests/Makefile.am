@@ -17,5 +17,5 @@
 noinst_PROGRAMS = pg-cop-tester
 pg_cop_tester_SOURCES = pg_cop_tester.c
 pg_cop_tester_LDADD = ../libPGCOP/libPGCOP.la
-pg_cop_tester_CFLAGS = -I ../libPGCOP
+pg_cop_tester_CFLAGS = -I $(srcdir)/../libPGCOP
 
