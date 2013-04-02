@@ -87,4 +87,13 @@
     fflush(stdout);                                                 \
   } while (0)
 
+#define DEBUG_LOG_BY_LEVEL(l, ...) \
+  do { \
+    extern int g_pg_cop_debug_level; \
+    if (g_pg_cop_debug_level >= l) { \
+      printf(__VA_ARGS__); \
+      fflush(stdout); \
+    } \
+  } while(0)
+
 #endif /* PG_COP_DEBUG_H */

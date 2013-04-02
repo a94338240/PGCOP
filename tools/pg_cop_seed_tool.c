@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <regex.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 enum _state_txt {
 	en_ready,
@@ -37,6 +38,7 @@ enum _state_txt {
 	en_note_mult,
 };
 
+int g_pg_cop_debug_level = 0;
 const char* g_output_folder = NULL;
 char* g_d_name = NULL;
 
@@ -174,13 +176,13 @@ static int _match_parttern(char* s)
 	char* osf = 0;
 
 	if (0 != _get_sub_str(s, pattern, &md_name, &endoff)) return -1;
-	printf("module name=%s\n", md_name);
+	DEBUG_LOG_BY_LEVEL(1, "module name=%s\n", md_name);
 	INIT_LIST_HEAD(&t0.list_head);
 	INIT_LIST_HEAD(&f0.list_head);
 
 	pattern = "([0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}:[0-9]{1,5})\\s+";
 	while (0 == _get_sub_str(dummy, pattern, &p_trck, &endoff)) {
-		printf("Tracker=%s\n", p_trck);
+	  DEBUG_LOG_BY_LEVEL(1, "Tracker=%s\n", p_trck);
 		new_track = (struct pg_cop_seed_file_tracker_info_list*)malloc(sizeof(struct pg_cop_seed_file_tracker_info_list));
 		memset(new_track, 0, sizeof(struct pg_cop_seed_file_tracker_info_list));
 		new_track->info.tracker_type = 0;
@@ -197,27 +199,28 @@ static int _match_parttern(char* s)
 	pattern = "(@METHODS:)";
 	if (0 != _get_sub_str(s, pattern, 0, &endoff)) return -1;
 	dummy = s + endoff;
-	printf("Functions: ");
+	DEBUG_LOG_BY_LEVEL(1, "Functions list:\n");
 	while ((tmp = strsep(&dummy, " ")) != NULL) {
 		if (*tmp != '\0') {
 			struct pg_cop_seed_file_func_info_list* new_f = (struct pg_cop_seed_file_func_info_list*)malloc(sizeof(struct pg_cop_seed_file_func_info_list));
 			new_f->name = tmp;
 			list_add_tail(&new_f->list_head, &f0.list_head);
-			printf("\t%s\n", tmp);
+			DEBUG_LOG_BY_LEVEL(1, "%s\t", tmp);
 		}
 	}
+	DEBUG_LOG_BY_LEVEL(1, "\n");
 	int l = strlen(g_output_folder) + strlen(g_d_name) + 5;
 	osf = (char*)malloc(l);
 	memset(osf, 0, l);
 	sprintf(osf, "%s%s%s", g_output_folder, "/", g_d_name);
 	sprintf(osf + l - 5, "%s", "seed");
-	printf("Output:%s\n", osf);
+	DEBUG_LOG_BY_LEVEL(1, "Output:%s\n", osf);
 	if (0 != pg_cop_seed_file_create(md_name, osf, &t0, &f0)) {
 		DEBUG_ERROR("Error occured when create seed file.");
 		free(osf);
 		return -1;
 	} else {
-		DEBUG_INFO("Seed file generated successfully.");
+		printf("Seed file:\"%s\" generated successfully.\n", osf);
 	}
 	free(osf);
 	return 0;
@@ -312,8 +315,7 @@ static int _generate(const char* path)
 		strncpy(module_path, path, sizeof(module_path) - 1);
 		strncat(module_path, "/", sizeof(module_path) - 1);
 		strncat(module_path, module_dir_entry->d_name, sizeof(module_path) - 1);
-		printf("\n\n");
-		DEBUG_INFO("File=%s, in progress...", module_path);
+		DEBUG_LOG_BY_LEVEL(1, "\nFile=%s, in progress...\n", module_path);
 		if (0 != _g_single_file(module_path)) {
 			DEBUG_ERROR("Error occured in \'%s\', invalid seed declaration comments found.", module_path);
 		}
@@ -337,8 +339,8 @@ int main(int argc, char** argv)
 	argc -= optct;
 	argv += optct;
 
-	if ((!HAVE_OPT(INPUT) || !HAVE_OPT(OUTPUT)) && !HAVE_OPT(VIEW)) {
-		DEBUG_ERROR("You need to specify an input and an output, or view in option.");
+	if (!HAVE_OPT(INPUT) && !HAVE_OPT(VIEW)) {
+		DEBUG_ERROR("You need to specify an input, or view in option.");
 		goto check_opts;
 	}
 
@@ -362,14 +364,20 @@ int main(int argc, char** argv)
 		}
 	}
 
+  if (HAVE_OPT(DEBUG_LEVEL)) {
+    g_pg_cop_debug_level = atoi(OPT_ARG(DEBUG_LEVEL));
+    DEBUG_LOG_BY_LEVEL(1, "debug level=%d\n", g_pg_cop_debug_level);
+    if (!path) {
+      DEBUG_ERROR("You need to specify a valid path for input.");
+      goto opt_get_input;
+    }
+  }
+
 	if (HAVE_OPT(OUTPUT)) {
 		g_output_folder = OPT_ARG(OUTPUT);
-		if (!g_output_folder) {
-			DEBUG_ERROR("You need to specify a valid path for output.");
-			goto opt_get_output;
-		}
 	} else {
-		g_output_folder = "./seed_output";
+	  printf("no given output dir.using default as \".\"\n");
+		g_output_folder = ".";
 	}
 
 	_generate(path);
@@ -377,7 +385,6 @@ int main(int argc, char** argv)
 view_seed:
 	return 0;
 
-opt_get_output:
 opt_get_input:
 check_opts:
 	return -1;

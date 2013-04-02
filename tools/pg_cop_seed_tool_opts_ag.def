@@ -27,3 +27,11 @@ flag = {
     max       = NOLIMIT;  /* occurrence limit (none)     */
     descrip   = "Seed file for detail.";
 };
+
+flag = {
+    name      = debug_level;
+    value     = d;        /* flag style option character */
+    arg-type  = string;   /* option argument indication  */
+    max       = NOLIMIT;  /* occurrence limit (none)     */
+    descrip   = "output debug log scalar.";
+};
