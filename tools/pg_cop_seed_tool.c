@@ -162,8 +162,7 @@ static int _get_sub_str(char* s, char* pattern, char** pout, int* end_offset)
 static int _match_parttern(char* s)
 {
 	char* pattern = "@MODULE:\\s+(\\w+)\\s+";
-	char* p_trck[32] = {0};
-	int i = 0;
+	char* p_trck = 0;
 	char* md_name = 0;
 	char* dummy = s;
 	int endoff = 0;
@@ -171,7 +170,7 @@ static int _match_parttern(char* s)
 	struct pg_cop_seed_file_tracker_info_list t0;
 	struct pg_cop_seed_file_tracker_info_list* new_track = 0;
 	struct pg_cop_seed_file_func_info_list f0;
-	unsigned int a1 = 0, a2 = 0, a3 = 0, a4 = 0, port = 0;
+	unsigned int iarr[5] = {0};
 	char* osf = 0;
 
 	if (0 != _get_sub_str(s, pattern, &md_name, &endoff)) return -1;
@@ -180,16 +179,17 @@ static int _match_parttern(char* s)
 	INIT_LIST_HEAD(&f0.list_head);
 
 	pattern = "([0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}:[0-9]{1,5})\\s+";
-	while (0 == _get_sub_str(dummy, pattern, &p_trck[i], &endoff)) {
-		printf("Tracker=%s\n", p_trck[i]);
+	while (0 == _get_sub_str(dummy, pattern, &p_trck, &endoff)) {
+		printf("Tracker=%s\n", p_trck);
 		new_track = (struct pg_cop_seed_file_tracker_info_list*)malloc(sizeof(struct pg_cop_seed_file_tracker_info_list));
 		memset(new_track, 0, sizeof(struct pg_cop_seed_file_tracker_info_list));
 		new_track->info.tracker_type = 0;
-		sscanf(p_trck[i], "%d.%d.%d.%d:%d", &a1, &a2, &a3, &a4, &port);
+		memset(iarr, 0, sizeof(iarr));
+		sscanf(p_trck, "%d.%d.%d.%d:%d", &iarr[0], &iarr[1], &iarr[2], &iarr[3], &iarr[4]);
 		char addr_array[32] = {0};
-		sprintf(addr_array, "%d.%d.%d.%d", a1, a2, a3, a4);
+		sprintf(addr_array, "%d.%d.%d.%d", iarr[0], iarr[1], iarr[2], iarr[3]);
 		inet_aton(addr_array, &new_track->info.address);
-		new_track->info.port = port;
+		new_track->info.port = iarr[4];
 		list_add_tail(&new_track->list_head, &t0.list_head);
 		dummy += endoff;
 	}
